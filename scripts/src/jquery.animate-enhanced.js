@@ -206,6 +206,7 @@ Changelog:
 				left : 0
 			}
 		},
+		valUnit = 'px',
 
 		DATA_KEY = 'jQe',
 		CUBIC_BEZIER_OPEN = 'cubic-bezier(',
@@ -235,6 +236,20 @@ Changelog:
 		jQuery.expr.filters.animated = function(elem) {
 			return jQuery(elem).data('events') && jQuery(elem).data('events')[transitionEndEvent] ? true : originalAnimatedFilter.call(this, elem);
 		};
+	}
+
+
+	/**
+		@private
+		@name _getUnit
+		@function
+		@description Return unit value ("px", "%", "em" for re-use correct one when translating)
+		@param {variant} [val] Target value
+	*/
+	function _getUnit(val){
+		var unit = val.match(/\D+$/);;
+			unit = (unit =="show" || unit==null)?'px':unit[0];
+		return unit;
 	}
 
 
@@ -294,7 +309,7 @@ Changelog:
 		@param {boolean} [use3D] Use translate3d if available?
 	*/
 	function _getTranslation(x, y, use3D) {
-		return ((use3D === true || (use3DByDefault === true && use3D !== false)) && has3D) ? 'translate3d(' + x + 'px, ' + y + 'px, 0)' : 'translate(' + x + 'px,' + y + 'px)';
+		return ((use3D === true || (use3DByDefault === true && use3D !== false)) && has3D) ? 'translate3d(' + x + valUnit+', ' + y + valUnit+', 0)' : 'translate(' + x + valUnit+',' + y + valUnit+')';
 	}
 
 
@@ -435,6 +450,7 @@ Changelog:
 		@param {variant} [val]
 	*/
 	function _cleanValue(val) {
+		valUnit = _getUnit(val);
 		return parseFloat(val.replace(/px/i, ''));
 	}
 
@@ -528,6 +544,7 @@ Changelog:
 	*/
 	jQuery.fn.animate = function(prop, speed, easing, callback) {
 		prop = prop || {};
+		console.log()
 		var isTranslatable = !(typeof prop['bottom'] !== 'undefined' || typeof prop['right'] !== 'undefined'),
 			optall = jQuery.speed(speed, easing, callback),
 			elements = this,
@@ -561,7 +578,7 @@ Changelog:
 						}
 						if (isTranslatable && typeof selfCSSData.meta !== 'undefined') {
 							for (var j = 0, dir; (dir = directions[j]); ++j) {
-								restore[dir] = selfCSSData.meta[dir + '_o'] + 'px';
+								restore[dir] = selfCSSData.meta[dir + '_o'] + valUnit;
 							}
 						}
 					}
@@ -627,7 +644,7 @@ Changelog:
 							p,
 							opt.duration,
 							cssEasing,
-							isDirection && prop.avoidTransforms === true ? cleanVal + 'px' : cleanVal,
+							isDirection && prop.avoidTransforms === true ? cleanVal + valUnit : cleanVal,
 							isDirection && prop.avoidTransforms !== true,
 							isTranslatable,
 							prop.useTranslate3d === true);
@@ -731,8 +748,8 @@ Changelog:
 									var explodedMatrix = restore[prop].replace(/^matrix\(/i, '').split(/, |\)$/g);
 
 									// apply the explicit left/top props
-									restore['left'] = (parseFloat(explodedMatrix[4]) + parseFloat(self.css('left')) + 'px') || 'auto';
-									restore['top'] = (parseFloat(explodedMatrix[5]) + parseFloat(self.css('top')) + 'px') || 'auto';
+									restore['left'] = (parseFloat(explodedMatrix[4]) + parseFloat(self.css('left')) + valUnit) || 'auto';
+									restore['top'] = (parseFloat(explodedMatrix[5]) + parseFloat(self.css('top')) + valUnit) || 'auto';
 
 									// remove the transformations
 									for (i = cssPrefixes.length - 1; i >= 0; i--) {
