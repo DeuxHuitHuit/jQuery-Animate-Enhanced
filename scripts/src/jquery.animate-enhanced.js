@@ -823,7 +823,8 @@ Changelog:
 	@param {boolean} [avoidCSSTransitions] flag to disable custom beahviour
 	 */
 	jQuery.fn.css = function ( name, value, avoidCSSTransitions ) {
-		var i, translate, oname = name, props = {'top':0,'left':0,'right':0,'bottom':0}, hasProps = false, t = jQuery(this);
+		var i, translate, oname = name, props = {'top':0,'left':0,'right':0,'bottom':0}, 
+			hasProps = false, hasExtraProps = false, t = jQuery(this);
 		// normalize input
 		if (!jQuery.isPlainObject(name)) {
 			name = {};
@@ -845,29 +846,49 @@ Changelog:
 			return originalCssMethod.apply(this, arguments);
 		}
 		
+		// detect if there is more css to set
+		if (hasProps) {
+			var extraCss = {};
+			
+			for (i in name) {
+				// if i is not part of props
+				if (!(i in props)) {
+					hasExtraProps = true;
+					extraCss[i] = name[i];
+				}
+			}
+			
+			// make sure we don not omit extra properties
+			if (hasExtraProps) {
+				t.css(extraCss);
+			}
+		}	
+		
+		// actual magic, for each element
 		return t.each(function(index, elem) {
 			
 			var t = jQuery(elem);
 		
 			// calculate values on top left
-			if (name['top'] == undefined) {
-				if (name['bottom'] == undefined) {
-					name['top'] = t.translation().y;
+			if (name.top == undefined) {
+				if (name.bottom == undefined) {
+					name.top = t.translation().y;
 				} else {
-					name['top'] = t.height() - parseInt(name['bottom'],10);
+					name.top = t.height() - parseInt(name.bottom, 10);
 				}
 			}
-			if (name['left'] == undefined) {
-				if (name['right'] == undefined) {
-					name['left'] = t.translation().x;
+			if (name.left == undefined) {
+				if (name.right == undefined) {
+					name.left = t.translation().x;
 				} else {
-					name['left'] = t.height() - parseInt(name['right'],10);
+					name.left = t.height() - parseInt(name.right,10);
 				}
 			}
 			
 			// apply the real css 3 
 			translate = _getTranslation(_cleanValue(name.left), _cleanValue(name.top), has3D);
 			
+			// for every browser
 			for (i in cssPrefixes) {
 				t.css(cssPrefixes[i]+'transform', translate);
 			}
