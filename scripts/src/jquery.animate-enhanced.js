@@ -828,6 +828,7 @@ Changelog:
 		if (!jQuery.isPlainObject(name)) {
 			name = {};
 			name[oname] = value;
+		} else {
 			avoidCSSTransitions = !!name.avoidCSSTransitions;
 		}
 		
