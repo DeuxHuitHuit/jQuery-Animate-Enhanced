@@ -189,7 +189,7 @@ Changelog:
 		- Less need for leaveTransforms = true due to better position detections
 */
 
-(function(jQuery, originalAnimateMethod, originalStopMethod) {
+(function(jQuery, originalAnimateMethod, originalStopMethod, originalCssMethod, originalDelayMethod) {
 
 	// ----------
 	// Plugin variables
@@ -216,16 +216,17 @@ Changelog:
 		CUBIC_BEZIER_CLOSE = ')',
 
 		originalAnimatedFilter = null,
-		pluginDisabledDefault = false;
+		pluginDisabledDefault = false,
 
 
 	// ----------
 	// Check if this browser supports CSS3 transitions
 	// ----------
-	var thisBody = document.body || document.documentElement,
+		thisBody = document.body || document.documentElement,
 		thisStyle = thisBody.style,
 		transitionEndEvent = (thisStyle.WebkitTransition !== undefined) ? 'webkitTransitionEnd' : (thisStyle.OTransition !== undefined) ? 'oTransitionEnd' : 'transitionend',
 		cssTransitionsSupported = thisStyle.WebkitTransition !== undefined || thisStyle.MozTransition !== undefined || thisStyle.OTransition !== undefined || thisStyle.transition !== undefined,
+		cssTransformSupported = thisStyle.WebkitTransform !== undefined || thisStyle.MozTransform !== undefined || thisStyle.OTransform !== undefined || thisStyle.transform !== undefined,
 		has3D = ('WebKitCSSMatrix' in window && 'm11' in new WebKitCSSMatrix()),
 		use3DByDefault = has3D;
 
@@ -776,4 +777,98 @@ Changelog:
 
 		return this;
 	};
-})(jQuery, jQuery.fn.animate, jQuery.fn.stop);
+	
+	
+	/**
+	@public
+	@name jQuery.fn.delay
+	@function
+	@description The enhanced jQuery.delay function
+	@param {int} [time]
+	@param {string} [type]
+	 */
+	jQuery.fn.delay = function( time, type ) {
+		// if no support for css 3, use the old method
+		if (!cssTransformSupported || !cssTransitionsSupported) {
+			return originalDelayMethod.apply(this, arguments);
+		}
+		
+		var t = $(this);
+		
+		// replace the current delay call with a transition-delay in css3
+		for (i in cssPrefixes) {
+			t.css(cssPrefixes[i]+'transition-delay', time+'ms');
+		}
+		
+		// when it's done, remove the delay has it's expired
+		setTimeout(function () {
+			for (i in cssPrefixes) {
+				t.css(cssPrefixes[i]+'transform', '');
+			}
+		}, time+1);
+		
+		return this;
+	};
+	
+	
+	/**
+	@public
+	@name jQuery.fn.css
+	@function
+	@description The enhanced jQuery.css function
+	@param {string} [name]
+	@param {mixed} [value]
+	@param {boolean} [useTransform] flag to disable custom beahviour
+	 */
+	jQuery.fn.css = function ( name, value, dontUseTransform) {
+		var i, translate, oname = name, props = {'top':0,'left':0,'right':0,'bottom':0}, hasProps = false, t = $(this);
+		// normalize input
+		if (!$.isPlainObject(name)) {
+			name = {};
+			name[oname] = value;
+		}
+		
+		// detect css attributes
+		for (i in name) {
+			if (i in props) {
+				hasProps = true;
+				break; // exit for
+			}
+		}
+		
+		// no need for our extension, call the original method
+		if (!hasProps || !!dontUseTransform || !cssTransformSupported ) {
+			return originalCssMethod.apply(this, arguments);
+		}
+		
+		return t.each(function(index, elem) {
+			
+			var t = $(elem);
+		
+			// calculate values on top left
+			if (name['top'] == undefined) {
+				if (name['bottom'] == undefined) {
+					name['top'] = t.translation().y;
+				} else {
+					name['top'] = t.height() - parseInt(name['bottom'],10);
+				}
+			}
+			if (name['left'] == undefined) {
+				if (name['right'] == undefined) {
+					name['left'] = t.translation().x;
+				} else {
+					name['left'] = t.height() - parseInt(name['right'],10);
+				}
+			}
+			
+			// apply the real css 3 
+			translate = 'translate' + (has3D ? '3d(' : '(') +  name.left + ',' + name.top + (has3D ? ',0px)' : ')');
+			
+			for (i in cssPrefixes) {
+				t.css(cssPrefixes[i]+'transform', translate);
+			}
+
+		});
+	};
+	
+})(jQuery, jQuery.fn.animate, jQuery.fn.stop, jQuery.fn.css, jQuery.fn.delay);
