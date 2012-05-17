@@ -252,7 +252,7 @@ Changelog:
 	*/
 	function _getUnit(val){
 		return val.match(/\D+$/);
-	}
+	};
 
 
 	/**
@@ -299,7 +299,7 @@ Changelog:
 		} else {
 			return cleanStart;
 		}
-	}
+	};
 
 	/**
 		@private
@@ -311,8 +311,8 @@ Changelog:
 		@param {boolean} [use3D] Use translate3d if available?
 	*/
 	function _getTranslation(x, y, use3D) {
-		return ((use3D === true || (use3DByDefault === true && use3D !== false)) && has3D) ? 'translate3d(' + x + 'px, ' + y + 'px, 0)' : 'translate(' + x + 'px,' + y + 'px)';
-	}
+		return ((use3D === true || (use3DByDefault === true && use3D !== false)) && has3D) ? 'translate3d(' + x + 'px, ' + y + 'px, 0px)' : 'translate(' + x + 'px,' + y + 'px)';
+	};
 
 
 	/**
@@ -356,7 +356,7 @@ Changelog:
 
 		// reapply data and return
 		return e.data(DATA_KEY, _applyCSSWithPrefix(e, enhanceData, property, duration, easing, offsetPosition, isTransform, isTranslatable, use3D));
-	}
+	};
 
 	/**
 		@private
@@ -410,7 +410,7 @@ Changelog:
 		}
 
 		return cssProperties;
-	}
+	};
 
 	/**
 		@private
@@ -426,7 +426,7 @@ Changelog:
 			}
 		}
 		return false;
-	}
+	};
 
 
 	/**
@@ -441,7 +441,7 @@ Changelog:
 			return false;
 		}
 		return true;
-	}
+	};
 
 
 	/**
@@ -454,7 +454,7 @@ Changelog:
 	function _cleanValue(val) {
 		valUnit = _getUnit(val);
 		return parseFloat(val.replace(/px/i, ''));
-	}
+	};
 
 
 	/**
@@ -469,7 +469,7 @@ Changelog:
 		var is = jQuery.inArray(prop, cssTransitionProperties) > -1;
 		if ((prop == 'width' || prop == 'height') && (value === parseFloat(element.css(prop)))) is = false;
 		return is;
-	}
+	};
 
 
 	jQuery.extend({
@@ -789,11 +789,11 @@ Changelog:
 	 */
 	jQuery.fn.delay = function( time, type ) {
 		// if no support for css 3, use the old method
-		if (!cssTransformSupported || !cssTransitionsSupported) {
+		if (!cssTransitionsSupported) {
 			return originalDelayMethod.apply(this, arguments);
 		}
 		
-		var t = $(this);
+		var t = jQuery(this);
 		
 		// replace the current delay call with a transition-delay in css3
 		for (i in cssPrefixes) {
@@ -820,10 +820,10 @@ Changelog:
 	@param {mixed} [value]
 	@param {boolean} [useTransform] flag to disable custom beahviour
 	 */
-	jQuery.fn.css = function ( name, value, dontUseTransform) {
-		var i, translate, oname = name, props = {'top':0,'left':0,'right':0,'bottom':0}, hasProps = false, t = $(this);
+	jQuery.fn.css = function ( name, value, dontUseTransform ) {
+		var i, translate, oname = name, props = {'top':0,'left':0,'right':0,'bottom':0}, hasProps = false, t = jQuery(this);
 		// normalize input
-		if (!$.isPlainObject(name)) {
+		if (!jQuery.isPlainObject(name)) {
 			name = {};
 			name[oname] = value;
 		}
@@ -843,7 +843,7 @@ Changelog:
 		
 		return t.each(function(index, elem) {
 			
-			var t = $(elem);
+			var t = jQuery(elem);
 		
 			// calculate values on top left
 			if (name['top'] == undefined) {
@@ -862,7 +862,7 @@ Changelog:
 			}
 			
 			// apply the real css 3 
-			translate = 'translate' + (has3D ? '3d(' : '(') +  name.left + ',' + name.top + (has3D ? ',0px)' : ')');
+			translate = _getTranslation(_cleanValue(name.left), _cleanValue(name.top), has3D);
 			
 			for (i in cssPrefixes) {
 				t.css(cssPrefixes[i]+'transform', translate);
