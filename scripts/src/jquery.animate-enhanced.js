@@ -786,10 +786,12 @@ Changelog:
 	@description The enhanced jQuery.delay function
 	@param {int} [time]
 	@param {string} [type]
+	@param {boolean} [avoidCSSTransitions] flag to disable custom beahviour
 	 */
-	jQuery.fn.delay = function( time, type ) {
+	jQuery.fn.delay = function( time, type, avoidCSSTransitions ) {
+		
 		// if no support for css 3, use the old method
-		if (!cssTransitionsSupported) {
+		if (!cssTransitionsSupported || !!avoidCSSTransitions) {
 			return originalDelayMethod.apply(this, arguments);
 		}
 		
@@ -818,14 +820,15 @@ Changelog:
 	@description The enhanced jQuery.css function
 	@param {string} [name]
 	@param {mixed} [value]
-	@param {boolean} [useTransform] flag to disable custom beahviour
+	@param {boolean} [avoidCSSTransitions] flag to disable custom beahviour
 	 */
-	jQuery.fn.css = function ( name, value, dontUseTransform ) {
+	jQuery.fn.css = function ( name, value, avoidCSSTransitions ) {
 		var i, translate, oname = name, props = {'top':0,'left':0,'right':0,'bottom':0}, hasProps = false, t = jQuery(this);
 		// normalize input
 		if (!jQuery.isPlainObject(name)) {
 			name = {};
 			name[oname] = value;
+			avoidCSSTransitions = !!name.avoidCSSTransitions;
 		}
 		
 		// detect css attributes
@@ -837,7 +840,7 @@ Changelog:
 		}
 		
 		// no need for our extension, call the original method
-		if (!hasProps || !!dontUseTransform || !cssTransformSupported ) {
+		if (!hasProps || !!avoidCSSTransitions || !cssTransformSupported ) {
 			return originalCssMethod.apply(this, arguments);
 		}
 		
