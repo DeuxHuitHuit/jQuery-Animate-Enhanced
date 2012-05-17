@@ -251,7 +251,9 @@ Changelog:
 		@param {variant} [val] Target value
 	*/
 	function _getUnit(val){
-		return val.match(/\D+$/);
+		var unit = val.match(/\D+$/);
+			unit = (unit =="show" || unit==null)?'px':unit[0];
+		return unit;
 	};
 
 
@@ -311,7 +313,9 @@ Changelog:
 		@param {boolean} [use3D] Use translate3d if available?
 	*/
 	function _getTranslation(x, y, use3D) {
-		return ((use3D === true || (use3DByDefault === true && use3D !== false)) && has3D) ? 'translate3d(' + x + 'px, ' + y + 'px, 0px)' : 'translate(' + x + 'px,' + y + 'px)';
+		var _3D = ((use3D === true || (use3DByDefault === true && use3D !== false)) && has3D);
+		
+		return 'translate' + (_3D ? '3d(' : '(') + x + valUnit + ',' + y + valUnit + (_3D ? '0' + valUnit + ')' : ')');
 	};
 
 
@@ -547,7 +551,7 @@ Changelog:
 	jQuery.fn.animate = function(prop, speed, easing, callback) {
 		prop = prop || {};
 		var isTranslatable = !(typeof prop['bottom'] !== 'undefined' || typeof prop['right'] !== 'undefined'),
-			optall = jQuery.speed(speed, easing, callback),
+			optall = jQuery.isPlainObject(speed) ? speed : jQuery.speed(speed, easing, callback),
 			elements = this,
 			callbackQueue = 0,
 			propertyCallback = function() {
