@@ -28,14 +28,15 @@ THE SOFTWARE.
 Extends jQuery.animate() to automatically use CSS3 transformations where applicable.
 Tested with jQuery 1.3.2+
 
-Supports -moz-transition, -webkit-transition, -o-transition, transition
+Supports -moz-transition, -webkit-transition, -o-transition, -ms-transition, transition
+Supports -moz-transform, -webkit-transform, -o-transform, -ms-transform, transform
 
 Targetted properties (for now):
-	- left
-	- top
+	- position: left, top, right, bottom
 	- opacity
 	- width
 	- height
+	- margin: margin-left, margin-right, margin-top, margin-bottom
 
 Usage (exactly the same as it would be normally):
 
@@ -44,6 +45,13 @@ Usage (exactly the same as it would be normally):
 	});
 
 Changelog:
+	0.92 (17/5/2012):
+		- Added support for translation when usign the raw css method (i.e. {top:10px,left:10px} -> translate(10px, 10px)
+		- Added support for the delay method (uses the transition-delay property)
+		- Merge pull from lelolo (unit management)
+		- Merge pull from klarstil (show and hide shortcut)
+		- Merge pull from amercier (new animatable properties and big fixes with floats)
+
 	0.91 (2/4/2012):
 		- Merge Pull Request #74 - Unit Management
 
@@ -196,7 +204,7 @@ Changelog:
 	// ----------
 	var	cssTransitionProperties = ['top', 'right', 'bottom', 'left', 'opacity', 'height', 'width', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom'],
 		directions = ['top', 'right', 'bottom', 'left'],
-		cssPrefixes = ['', '-webkit-', '-moz-', '-o-'],
+		cssPrefixes = ['', '-webkit-', '-moz-', '-o-', '-ms-'],
 		pluginOptions = ['avoidTransforms', 'useTranslate3d', 'leaveTransforms'],
 		rfxnum = /^([+-]=)?([\d+-.]+)(.*)$/,
 		rupper = /([A-Z])/g,
