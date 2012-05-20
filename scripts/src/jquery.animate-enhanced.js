@@ -51,6 +51,8 @@ Changelog:
 		- Merge pull from lelolo (unit management)
 		- Merge pull from klarstil (show and hide shortcut)
 		- Merge pull from amercier (new animatable properties and big fixes with floats)
+		- Merge pull from caseycorcorcan (speed object)
+		- Merge pull from snaver (slide test)
 
 	0.91 (2/4/2012):
 		- Merge Pull Request #74 - Unit Management
@@ -197,7 +199,7 @@ Changelog:
 		- Less need for leaveTransforms = true due to better position detections
 */
 
-(function(jQuery, originalAnimateMethod, originalStopMethod, originalCssMethod, originalDelayMethod) {
+(function(jQuery, originalAnimateMethod, originalStopMethod, originalCssMethod, originalDelayMethod, undefined) {
 
 	// ----------
 	// Plugin variables
@@ -255,7 +257,7 @@ Changelog:
 			},
 
 		originalAnimatedFilter = null,
-		pluginDisabledDefault = false,
+		//pluginDisabledDefault = false, @see jQuery.fn.animate.avoidCSSTransitions
 
 
 	// ----------
@@ -329,7 +331,7 @@ Changelog:
 				// set the css opacity as the start value
 				cleanStart = 1; // * e.css('opacity');
 				if (hidden) {
-					e.css({'display':'block', 'opacity': 0});
+					e.css({'display':'block', 'opacity': 0, avoidCSS});
 				}
 			} else if (val == 'hide') {
 				cleanStart = 0;
@@ -547,7 +549,7 @@ Changelog:
 			@description Toggle the plugin to be disabled by default (can be overridden per animation with avoidCSSTransitions)
 		*/
 		toggleDisabledByDefault: function() {
-			return pluginDisabledDefault = !pluginDisabledDefault;
+			return jQuery.fn.animate.avoidCSSTransitions = !jQuery.fn.animate.avoidCSSTransitions; //pluginDisabledDefault = !pluginDisabledDefault;
 		}
 	});
 
@@ -616,7 +618,7 @@ Changelog:
 					}
 				}
 			},
-			bypassPlugin = (typeof prop['avoidCSSTransitions'] !== 'undefined') ? prop['avoidCSSTransitions'] : pluginDisabledDefault;
+			bypassPlugin = (typeof prop['avoidCSSTransitions'] !== 'undefined') ? prop['avoidCSSTransitions'] : !!jQuery.fn.animate.avoidCSSTransitions;
 
 		if (bypassPlugin === true || !cssTransitionsSupported || _isEmptyObject(prop) || _isBoxShortcut(prop) || optall.duration <= 0 || (jQuery.fn.animate.defaults.avoidTransforms === true && prop['avoidTransforms'] !== false)) {
 			return originalAnimateMethod.apply(this, arguments);
@@ -630,7 +632,7 @@ Changelog:
 						restore = {};
 
 					// convert translations to left & top for layout
-					if (prop.leaveTransforms !== true) {
+					if (prop.leaveTransforms !== true || jQuery.fn.animate.leaveTransform !== true) {
 						for (var i = cssPrefixes.length - 1; i >= 0; i--) {
 							restore[cssPrefixes[i] + 'transform'] = '';
 						}
@@ -652,7 +654,7 @@ Changelog:
 
 					// if we used the fadeOut shortcut make sure elements are display:none
 					if (prop.opacity === 'hide') {
-						self.css({'display': 'none', 'opacity': ''});
+						self.css({'display': 'none', 'opacity': 0, avoidCSSTransitions: true});
 					}
 
 					// run the main callback function
@@ -676,20 +678,12 @@ Changelog:
 							self,
 							cssP,
 							opt.duration,
-//<<<<<<< HEAD
-//							cssEasing,
-//							isDirection && prop.avoidTransforms === true ? cleanVal + valUnit : cleanVal,
-//=======
 							easings[opt.easing || 'swing'] ? easings[opt.easing || 'swing'] : opt.easing || 'swing',
-//							isDirection && prop.avoidTransforms === true ? cleanVal + 'px' : cleanVal,
 							isDirection && prop.avoidTransforms === true ? cleanVal + valUnit : cleanVal,
-//>>>>>>> 784f8f71043cfe956cc5d16968dd4028fa07bd20
 							isDirection && prop.avoidTransforms !== true,
 							isTranslatable,
-							prop.useTranslate3d === true);
-
-					}
-					else {
+							prop.useTranslate3d === true || jQuery.fn.animate.useTranslate3d === true);
+					} else {
 						domProperties[p] = prop[p];
 					}
 				}
@@ -733,7 +727,12 @@ Changelog:
 		});
 	};
 
-    jQuery.fn.animate.defaults = {};
+    jQuery.fn.animate.defaults = {
+    	avoidTransforms: undefined,
+    	useTranslate3d: undefined,
+    	leaveTransforms: undefined,
+    	avoidCSSTransitions: undefined
+    };
 
 
 	/**
@@ -746,7 +745,12 @@ Changelog:
 		@param {boolean} [leaveTransforms] Leave transforms/translations as they are? Default: false (reset translations to calculated explicit left/top props)
 	*/
 	jQuery.fn.stop = function(clearQueue, gotoEnd, leaveTransforms) {
-		if (!cssTransitionsSupported) return originalStopMethod.apply(this, [clearQueue, gotoEnd]);
+		if (!cssTransitionsSupported) {
+			return originalStopMethod.apply(this, [clearQueue, gotoEnd]);
+		}
+		
+			jQuery.fn.animate.leaveTransform !== undefined ? jQuery.fn.animate.leaveTransform : 
+				!!jQuery.fn.animate.avoidCSSTransitions;
 
 		// clear the queue?
 		if (clearQueue) this.queue([]);
@@ -787,12 +791,6 @@ Changelog:
 								// is this a matrix property? extract left/right/top/bottom and apply
 								if (!leaveTransforms && (/matrix/i).test(restore[prop])) {
 									var explodedMatrix = restore[prop].replace(/^matrix\(/i, '').split(/, |\)$/g);
-//<<<<<<< HEAD
-
-									// apply the explicit left/top props
-//									restore['left'] = (parseFloat(explodedMatrix[4]) + parseFloat(self.css('left')) + valUnit) || 'auto';
-//									restore['top'] = (parseFloat(explodedMatrix[5]) + parseFloat(self.css('top')) + valUnit) || 'auto';
-//=======
 									
 									var left   = self.css('left'),
 										right  = self.css('right'),
@@ -804,7 +802,6 @@ Changelog:
 									restore['right']  = right  === 'auto' ? 'auto' : (-parseFloat(explodedMatrix[4]) + parseFloat(right))  + valUnit;//'px';
 									restore['top']    = top    === 'auto' ? 'auto' : ( parseFloat(explodedMatrix[5]) + parseFloat(top))    + valUnit;//'px';
 									restore['bottom'] = bottom === 'auto' ? 'auto' : (-parseFloat(explodedMatrix[5]) + parseFloat(bottom)) + valUnit;//'px';
-//>>>>>>> 784f8f71043cfe956cc5d16968dd4028fa07bd20
 
 									// remove the transformations
 									for (i = cssPrefixes.length - 1; i >= 0; i--) {
@@ -844,6 +841,8 @@ Changelog:
 	 */
 	jQuery.fn.delay = function( time, type, avoidCSSTransitions ) {
 		
+		avoidCSSTransitions = avoidCSSTransition !== undefined ? !!avoidCSSTransition : !!jQuery.fn.animate.defaults.avoidCSSTransitions;
+		
 		// if no support for css 3, use the old method
 		if (!cssTransitionsSupported || !!avoidCSSTransitions) {
 			return originalDelayMethod.apply(this, arguments);
@@ -877,7 +876,7 @@ Changelog:
 	@param {boolean} [avoidCSSTransitions] flag to disable custom beahviour
 	 */
 	jQuery.fn.css = function ( name, value, avoidCSSTransitions ) {
-		var i, translate, oname = name, props = {'top':0,'left':0,'right':0,'bottom':0}, 
+		var i, translate, oname = name,
 			hasProps = false, hasExtraProps = false, isGetter = false, t = jQuery(this);
 		// normalize input
 		if (!jQuery.isPlainObject(name)) {
@@ -894,7 +893,7 @@ Changelog:
 		if (!isGetter) {
 			// detect css attributes
 			for (i in name) {
-				if (i in props) {
+				if (jQuery.inArray(i, directions)) {
 					hasProps = true;
 					break; // exit for
 				}
@@ -912,7 +911,7 @@ Changelog:
 			
 			for (i in name) {
 				// if i is not part of props
-				if (!(i in props)) {
+				if (!jQuery.inArray(i, directions)) {
 					hasExtraProps = true;
 					extraCss[i] = name[i];
 				}
