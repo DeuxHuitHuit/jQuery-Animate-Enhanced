@@ -917,7 +917,7 @@ Changelog:
 		if (!isGetter) {
 			// detect css attributes
 			for (i in name) {
-				if (jQuery.inArray(i, directions)) {
+				if (!!~jQuery.inArray(i, directions)) {
 					hasProps = true;
 					break; // exit for
 				}
@@ -931,17 +931,19 @@ Changelog:
 		
 		// detect if there is more css to set
 		if (hasProps) {
-			var extraCss = {};
+			var extraCss = {
+					avoidCSSTransitions: true
+				};
 			
 			for (i in name) {
-				// if i is not part of props
-				if (!jQuery.inArray(i, directions)) {
+				// if i is not part of directions
+				if (!~jQuery.inArray(i, directions)) {
 					hasExtraProps = true;
 					extraCss[i] = name[i];
 				}
 			}
 			
-			// make sure we don not omit extra properties
+			// make sure we do not omit extra properties
 			if (hasExtraProps) {
 				t.css(extraCss);
 			}
@@ -973,9 +975,9 @@ Changelog:
 			
 			// for every browser
 			for (i in cssPrefixes) {
-				t.css(cssPrefixes[i]+'transform', translate);
+				t.css(cssPrefixes[i]+'transform', translate, true);
 			}
-			return true;
+			//return true;
 		});
 	};
 	
