@@ -746,7 +746,7 @@ Changelog:
 	*/
 	jQuery.fn.stop = function(clearQueue, gotoEnd, leaveTransforms) {
 		if (!cssTransitionsSupported) {
-			return originalStopMethod.apply(this, [clearQueue, gotoEnd]);
+			return originalStopMethod.apply(this, arguments);
 		}
 		
 			jQuery.fn.animate.leaveTransform !== undefined ? jQuery.fn.animate.leaveTransform : 
@@ -822,7 +822,7 @@ Changelog:
 			}
 			else {
 				// dom transition
-				originalStopMethod.apply(self, [clearQueue, gotoEnd]);
+				originalStopMethod.apply(self, arguments);
 			}
 		});
 
