@@ -48,6 +48,8 @@ Changelog:
 	0.92 (17/5/2012):
 		- Added support for translation when usign the raw css method (i.e. {top:10px,left:10px} -> translate(10px, 10px)
 		- Added support for the delay method (uses the transition-delay property)
+		- Added better defaults support
+		- Assure all calls to original methods are done with all arguments (since it may not be the original one)
 		- Merge pull from lelolo (unit management)
 		- Merge pull from klarstil (show and hide shortcut)
 		- Merge pull from amercier (new animatable properties and big fixes with floats)
@@ -331,7 +333,7 @@ Changelog:
 				// set the css opacity as the start value
 				cleanStart = 1; // * e.css('opacity');
 				if (hidden) {
-					e.css({'display':'block', 'opacity': 0, avoidCSS});
+					e.css({'display':'block', 'opacity': 0, avoidCSSTransitions: true});
 				}
 			} else if (val == 'hide') {
 				cleanStart = 0;
@@ -629,10 +631,11 @@ Changelog:
 				opt = jQuery.extend({}, optall),
 				cssCallback = function() {
 					var selfCSSData = self.data(DATA_KEY) || { original: {} },
-						restore = {};
+						restore = {},
+						isHideOpacity = (prop.opacity === 'hide');
 
 					// convert translations to left & top for layout
-					if (prop.leaveTransforms !== true || jQuery.fn.animate.leaveTransform !== true) {
+					if (!isHideOpacity && (prop.leaveTransforms !== true || jQuery.fn.animate.leaveTransform !== true)) {
 						for (var i = cssPrefixes.length - 1; i >= 0; i--) {
 							restore[cssPrefixes[i] + 'transform'] = '';
 						}
@@ -653,7 +656,7 @@ Changelog:
 						data(DATA_KEY, null);
 
 					// if we used the fadeOut shortcut make sure elements are display:none
-					if (prop.opacity === 'hide') {
+					if (isHideOpacity) {
 						self.css({'display': 'none', 'opacity': 0, avoidCSSTransitions: true});
 					}
 
@@ -749,7 +752,7 @@ Changelog:
 			return originalStopMethod.apply(this, arguments);
 		}
 		
-			jQuery.fn.animate.leaveTransform !== undefined ? jQuery.fn.animate.leaveTransform : 
+		jQuery.fn.animate.leaveTransform !== undefined ? jQuery.fn.animate.leaveTransform : 
 				!!jQuery.fn.animate.avoidCSSTransitions;
 
 		// clear the queue?
@@ -768,7 +771,11 @@ Changelog:
 					// grab end state properties
 					restore = selfCSSData.secondary;
 
-					if (!leaveTransforms && typeof selfCSSData.meta['left_o'] !== undefined || typeof selfCSSData.meta['right_o'] !== undefined || typeof selfCSSData.meta['top_o'] !== undefined || typeof selfCSSData.meta['bottom_o'] !== undefined) {
+					if (!leaveTransforms && (
+						typeof selfCSSData.meta['left_o'] !== undefined || 
+						typeof selfCSSData.meta['right_o'] !== undefined || 
+						typeof selfCSSData.meta['top_o'] !== undefined || 
+						typeof selfCSSData.meta['bottom_o'] !== undefined )) {
 						restore['left']   = typeof selfCSSData.meta['left_o']   !== undefined ? selfCSSData.meta['left_o']   : 'auto';
 						restore['right']  = typeof selfCSSData.meta['right_o']  !== undefined ? selfCSSData.meta['right_o']  : 'auto';
 						restore['top']    = typeof selfCSSData.meta['top_o']    !== undefined ? selfCSSData.meta['top_o']    : 'auto';
@@ -824,6 +831,7 @@ Changelog:
 				// dom transition
 				originalStopMethod.apply(self, arguments);
 			}
+			return true;
 		});
 
 		return this;
@@ -841,7 +849,8 @@ Changelog:
 	 */
 	jQuery.fn.delay = function( time, type, avoidCSSTransitions ) {
 		
-		avoidCSSTransitions = avoidCSSTransition !== undefined ? !!avoidCSSTransition : !!jQuery.fn.animate.defaults.avoidCSSTransitions;
+		avoidCSSTransitions = avoidCSSTransition !== undefined ? !!avoidCSSTransition : 
+			!!jQuery.fn.animate.defaults.avoidCSSTransitions;
 		
 		// if no support for css 3, use the old method
 		if (!cssTransitionsSupported || !!avoidCSSTransitions) {
@@ -850,19 +859,30 @@ Changelog:
 		
 		var t = jQuery(this);
 		
-		// replace the current delay call with a transition-delay in css3
-		for (i in cssPrefixes) {
-			t.css(cssPrefixes[i]+'transition-delay', time+'ms');
-		}
-		
-		// when it's done, remove the delay has it's expired
-		setTimeout(function () {
-			for (i in cssPrefixes) {
-				t.css(cssPrefixes[i]+'transform', '');
+		return t.each(function (index, elem) {
+			var self = $(elem),
+				// if there this element is being animated with CSS 3
+				selfCSSData = self.data(DATA_KEY);
+
+			// is this a CSS transition?
+			if (selfCSSData && !_isEmptyObject(selfCSSData)) {
+			
+				// replace the current delay call with a transition-delay in css3
+				for (i in cssPrefixes) {
+					self.css(cssPrefixes[i]+'transition-delay', time+'ms', true);
+				}
+				
+				// when it's done, remove the delay since it's expired
+				setTimeout(function () {
+					for (i in cssPrefixes) {
+						t.css(cssPrefixes[i]+'transition-delay', '', true);
+					}
+				}, time+1);
+			} else {
+				originalDelayMethod.apply(this, arguments);
 			}
-		}, time+1);
-		
-		return this;
+			return true;
+		});
 	};
 	
 	
@@ -878,8 +898,12 @@ Changelog:
 	jQuery.fn.css = function ( name, value, avoidCSSTransitions ) {
 		var i, translate, oname = name,
 			hasProps = false, hasExtraProps = false, isGetter = false, t = jQuery(this);
+		
 		// normalize input
-		if (!jQuery.isPlainObject(name)) {
+		if (jQuery.isPlainObject(name) && _isEmptyObject(name)) {
+			return this;
+			
+		} else if (!jQuery.isPlainObject(name)) {
 			if (value === undefined) {
 				isGetter = true;
 			} else {
@@ -951,7 +975,7 @@ Changelog:
 			for (i in cssPrefixes) {
 				t.css(cssPrefixes[i]+'transform', translate);
 			}
-
+			return true;
 		});
 	};
 	
