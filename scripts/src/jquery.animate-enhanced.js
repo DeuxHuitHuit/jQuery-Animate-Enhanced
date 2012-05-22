@@ -203,6 +203,8 @@ Changelog:
 
 (function(jQuery, originalAnimateMethod, originalStopMethod, originalCssMethod, originalDelayMethod, undefined) {
 
+	"use strict";
+	
 	// ----------
 	// Plugin variables
 	// ----------
@@ -230,6 +232,10 @@ Changelog:
 				bounce: CUBIC_BEZIER_OPEN + '0.0, 0.35, .5, 1.3' + CUBIC_BEZIER_CLOSE,
 				linear: 'linear',
 				swing: 'ease-in-out',
+				ease: 'ease', // (0.25, 0.1, 0.25, 1.0)
+				easeIn: 'ease-in', // (0.42, 0, 1.0, 1.0)
+				easeOut: 'ease-out', // (0, 0, 0.58, 1.0),
+				easeInOut: 'ease-in-out', // (0.42, 0, 0.58, 1.0)
 
 				// Penner equation approximations from Matthew Lein's Ceaser: http://matthewlein.com/ceaser/
 				easeInQuad:     CUBIC_BEZIER_OPEN + '0.550, 0.085, 0.680, 0.530' + CUBIC_BEZIER_CLOSE,
@@ -322,19 +328,19 @@ Changelog:
 			hidden = e.is(':hidden'),
 			translation = e.translation();
 
-		if (prop == 'left') cleanStart = parseInt(cleanCSSStart, 10) + translation.x;
-		if (prop == 'right') cleanStart = parseInt(cleanCSSStart, 10) + translation.x;
-		if (prop == 'top') cleanStart = parseInt(cleanCSSStart, 10) + translation.y;
-		if (prop == 'bottom') cleanStart = parseInt(cleanCSSStart, 10) + translation.y;
+		if (prop == 'left') cleanStart = parseFloat(cleanCSSStart, 10) + translation.x;
+		else if (prop == 'right') cleanStart = parseFloat(cleanCSSStart, 10) + translation.x;
+		else if (prop == 'top') cleanStart = parseFloat(cleanCSSStart, 10) + translation.y;
+		else if (prop == 'bottom') cleanStart = parseFloat(cleanCSSStart, 10) + translation.y;
 
 		// deal with shortcuts
 		if(!parts) {
 			if(val === 'show') {
 				// set the css opacity as the start value
 				cleanStart = 1; // * e.css('opacity');
-				if (hidden) {
+				/*if (hidden) {
 					e.css({'display':'block', 'opacity': 0, avoidCSSTransitions: true});
-				}
+				}*/
 			} else if (val == 'hide') {
 				cleanStart = 0;
 			}
@@ -427,11 +433,13 @@ Changelog:
 
 		cssProperties = cssProperties || {};
 		if (!cssProperties.original) {
-			cssProperties.original = {};
+			cssProperties.original = {
+				avoidCSSTransitions:true
+			};
 			saveOriginal = true;
 		}
-		cssProperties.properties = cssProperties.properties || {};
-		cssProperties.secondary = cssProperties.secondary || {};
+		cssProperties.properties = cssProperties.properties || {avoidCSSTransitions:true};
+		cssProperties.secondary = cssProperties.secondary || {avoidCSSTransitions:true};
 
 		var meta = cssProperties.meta,
 			original = cssProperties.original,
@@ -446,9 +454,9 @@ Changelog:
 			var cssProperty = (transform ? cssPrefixes[i] + 'transform' : property);
 
 			if (saveOriginal) {
-				original[tp] = e.css(tp) || '';
-				original[td] = e.css(td) || '';
-				original[tf] = e.css(tf) || '';
+				original[tp] = e.css(tp) || 'all';
+				original[td] = e.css(td) || '0s';
+				original[tf] = e.css(tf) || 'linear';
 			}
 
 			secondary[cssProperty] = transform ? _getTranslation(meta.left, meta.top, use3D) : value; //transform ? _getTranslation(property === 'left' ? meta.left : -meta.right, property === 'top' ? meta.top : -meta.bottom, use3D) : value;
@@ -471,6 +479,22 @@ Changelog:
 	function _isBoxShortcut(prop) {
 		for (var property in prop) {
 			if ((property == 'width' || property == 'height') && (prop[property] == 'show' || prop[property] == 'hide' || prop[property] == 'toggle')) {
+				return true;
+			}
+		}
+		return false;
+	};
+	
+	/**
+		@private
+		@name _isOpacityShortcut
+		@function
+		@description Shortcut to detect if we need to step away from fadeToggle/In/Out, CSS accelerated transitions (to come later with fx.step support)
+		@param {object} [prop]
+	*/
+	function _isOpacityShortcut(prop) {
+		for (var property in prop) {
+			if ((property == 'opacity') && (prop[property] == 'show' || prop[property] == 'hide' || prop[property] == 'toggle')) {
 				return true;
 			}
 		}
@@ -592,6 +616,10 @@ Changelog:
 		return translation;
 	};
 
+	
+	function _assureDefault(props, prop) {
+		return props[prop] != undefined ? !!props[prop] : !!jQuery.fn.animate.defaults[prop];
+	};
 
 
 	/**
@@ -606,8 +634,16 @@ Changelog:
 	*/
 	jQuery.fn.animate = function(prop, speed, easing, callback) {
 		prop = prop || {};
+		
+		// normalize values
+		if !(_isEmptyObject(prop)) {
+			prop.avoidTransforms = _assureDefault(prop, 'avoidTransforms');
+			prop.leaveTransforms = _assureDefault(prop, 'leaveTransforms');
+			prop.avoidCSSTransitions = _assureDefault(prop, 'avoidCSSTransitions');
+			prop.useTranslate3d = _assureDefault(prop, 'useTranslate3d');
+		}
 
-		var isTranslatable = !(typeof prop['bottom'] !== 'undefined' && typeof prop['top'] !== 'undefined' || typeof prop['right'] !== 'undefined' && typeof prop['left'] !== 'undefined'),
+		var isTranslatable = (typeof prop['bottom'] !== 'undefined' || typeof prop['top'] !== 'undefined' || typeof prop['right'] !== 'undefined' || typeof prop['left'] !== 'undefined'),
 			optall = jQuery.isPlainObject(speed) ? speed : jQuery.speed(speed, easing, callback),
 			elements = this,
 			callbackQueue = 0,
@@ -619,23 +655,24 @@ Changelog:
 						optall.complete.apply(elements[0], arguments);
 					}
 				}
-			},
-			bypassPlugin = (typeof prop['avoidCSSTransitions'] !== 'undefined') ? prop['avoidCSSTransitions'] : !!jQuery.fn.animate.avoidCSSTransitions;
+			};
 
-		if (bypassPlugin === true || !cssTransitionsSupported || _isEmptyObject(prop) || _isBoxShortcut(prop) || optall.duration <= 0 || (jQuery.fn.animate.defaults.avoidTransforms === true && prop['avoidTransforms'] !== false)) {
+		if (prop.avoidCSSTransitions === true || !cssTransitionsSupported || _isEmptyObject(prop) || _isBoxShortcut(prop) || optall.duration <= 0) {
 			return originalAnimateMethod.apply(this, arguments);
 		}
 
-		return this[ optall.queue === true ? 'queue' : 'each' ](function() {
+		return this[ optall.queue === true ? 'queue' : 'each' ].call(this, function() {
 			var self = jQuery(this),
 				opt = jQuery.extend({}, optall),
 				cssCallback = function() {
-					var selfCSSData = self.data(DATA_KEY) || { original: {} },
-						restore = {},
-						isHideOpacity = (prop.opacity === 'hide');
+					var selfCSSData = self.data(DATA_KEY) || { original: {avoidCSSTransitions: true} },
+						restore = {
+							avoidCSSTransitions: true
+						},
+						isHideOpacity = _isOpacityShortcut(prop) && prop.opacity == 'hide';
 
 					// convert translations to left & top for layout
-					if (!isHideOpacity && (prop.leaveTransforms !== true || jQuery.fn.animate.leaveTransform !== true)) {
+					if (!isHideOpacity && prop.leaveTransforms !== true) {
 						for (var i = cssPrefixes.length - 1; i >= 0; i--) {
 							restore[cssPrefixes[i] + 'transform'] = '';
 						}
@@ -681,11 +718,11 @@ Changelog:
 							self,
 							cssP,
 							opt.duration,
-							easings[opt.easing || 'swing'] ? easings[opt.easing || 'swing'] : opt.easing || 'swing',
+							easings[opt.easing || (jQuery.easing && jQuery.easing.def) || 'swing'], //? easings[opt.easing || 'swing'] : opt.easing || 'swing',
 							isDirection && prop.avoidTransforms === true ? cleanVal + valUnit : cleanVal,
 							isDirection && prop.avoidTransforms !== true,
 							isTranslatable,
-							prop.useTranslate3d === true || jQuery.fn.animate.useTranslate3d === true);
+							prop.useTranslate3d === true);
 					} else {
 						domProperties[p] = prop[p];
 					}
@@ -707,7 +744,7 @@ Changelog:
 				// has to be done in a timeout to ensure transition properties are set
 				setTimeout(function() {
 					self.bind(transitionEndEvent, cssCallback).css(secondary);
-				});
+				}, 0);
 			}
 			else {
 				// it won't get fired otherwise
@@ -719,20 +756,21 @@ Changelog:
 				callbackQueue++;
 				originalAnimateMethod.apply(self, [domProperties, {
 					duration: opt.duration,
-					easing: jQuery.easing[opt.easing] ? opt.easing : (jQuery.easing.swing ? 'swing' : 'linear'),
+					easing: !!jQuery.easing[opt.easing] ? opt.easing : (jQuery.easing.swing ? 'swing' : 'linear'),
 					complete: propertyCallback,
-					queue: opt.queue
+					queue: opt.queue,
+					step: opt.step
 				}]);
 			}
 
 			// strict JS compliance
 			return true;
-		});
+		}); // end each/queue
 	};
 
     jQuery.fn.animate.defaults = {
     	avoidTransforms: undefined,
-    	useTranslate3d: undefined,
+    	useTranslate3d: true,
     	leaveTransforms: undefined,
     	avoidCSSTransitions: undefined
     };
@@ -752,20 +790,21 @@ Changelog:
 			return originalStopMethod.apply(this, arguments);
 		}
 		
-		jQuery.fn.animate.leaveTransform !== undefined ? jQuery.fn.animate.leaveTransform : 
-				!!jQuery.fn.animate.avoidCSSTransitions;
+		leaveTransforms = _assureDefault({leaveTransforms:leaveTransforms}, 'leaveTransforms')
 
 		// clear the queue?
 		if (clearQueue) this.queue([]);
 
 		// route to appropriate stop methods
-		this.each(function() {
+		return this.each(function() {
 			var self = jQuery(this),
 				selfCSSData = self.data(DATA_KEY);
 
 			// is this a CSS transition?
 			if (selfCSSData && !_isEmptyObject(selfCSSData)) {
-				var i, restore = {};
+				var i, restore = {
+						avoidCssTransitions: true
+					};
 
 				if (gotoEnd) {
 					// grab end state properties
@@ -833,8 +872,6 @@ Changelog:
 			}
 			return true;
 		});
-
-		return this;
 	};
 	
 	
@@ -849,8 +886,7 @@ Changelog:
 	 */
 	jQuery.fn.delay = function( time, type, avoidCSSTransitions ) {
 		
-		avoidCSSTransitions = avoidCSSTransition !== undefined ? !!avoidCSSTransition : 
-			!!jQuery.fn.animate.defaults.avoidCSSTransitions;
+		avoidCSSTransitions = _assureDefault({avoidCSSTransition:avoidCSSTransitions, 'avoidCSSTransitions');
 		
 		// if no support for css 3, use the old method
 		if (!cssTransitionsSupported || !!avoidCSSTransitions) {
@@ -875,7 +911,7 @@ Changelog:
 				// when it's done, remove the delay since it's expired
 				setTimeout(function () {
 					for (i in cssPrefixes) {
-						t.css(cssPrefixes[i]+'transition-delay', '', true);
+						self.css(cssPrefixes[i]+'transition-delay', '', true);
 					}
 				}, time+1);
 			} else {
@@ -885,6 +921,18 @@ Changelog:
 		});
 	};
 	
+	
+	function _getPositionElement(node) {
+		node = $(node);
+		
+		var elem = node.offsetParent(), // default
+			position = node.css('position');
+		
+		if (position == 'fixed') {
+			elem = $(window);
+		}
+		return elem;
+	};
 	
 	/**
 	@public
@@ -901,6 +949,7 @@ Changelog:
 		
 		// normalize input
 		if (jQuery.isPlainObject(name) && _isEmptyObject(name)) {
+			// empty object, nothing to do
 			return this;
 			
 		} else if (!jQuery.isPlainObject(name)) {
@@ -910,9 +959,9 @@ Changelog:
 				name = {};
 				name[oname] = value;
 			}
-		} else {
-			avoidCSSTransitions = !!name.avoidCSSTransitions;
 		}
+		avoidCSSTransitions = avoidCSSTransitions != undefined ? avoidCSSTransitions :
+							  _assureDefault(name, 'avoidCSSTransitions');
 		
 		if (!isGetter) {
 			// detect css attributes
@@ -957,16 +1006,28 @@ Changelog:
 			// calculate values on top left
 			if (name.top == undefined) {
 				if (name.bottom == undefined) {
-					name.top = t.translation().y;
+					name.top = t.translation().y; // get the actual value
 				} else {
-					name.top = t.height() - parseInt(name.bottom, 10);
+					// calculate value based on the offset parent
+					name.top = /*_getPositionElement(t).height() - t.height() */ - _cleanValue(name.bottom);
+					t.css('bottom', 0, true); // let the browser know that we handle this
+				}
+			} else {
+				if (name.bottom != undefined) {
+					t.css('bottom', name.bottom, true);
 				}
 			}
 			if (name.left == undefined) {
 				if (name.right == undefined) {
-					name.left = t.translation().x;
+					name.left = t.translation().x; // get the actual value
 				} else {
-					name.left = t.height() - parseInt(name.right,10);
+					// calculate value based on the offset parent
+					name.left = /*_getPositionElement(t).width() - t.width()*/ - _cleanValue(name.right);
+					t.css('right', 0, true); // let the browser know that we handle this
+				}
+			} else {
+				if (name.right != undefined) {
+					t.css('right', name.right, true);
 				}
 			}
 			
