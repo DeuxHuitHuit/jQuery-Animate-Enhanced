@@ -211,7 +211,7 @@ Changelog:
 	var	cssTransitionProperties = ['top', 'right', 'bottom', 'left', 'opacity', 'height', 'width', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom'],
 		directions = ['top', 'right', 'bottom', 'left'],
 		cssPrefixes = ['', '-webkit-', '-moz-', '-o-', '-ms-'],
-		pluginOptions = ['avoidTransforms', 'useTranslate3d', 'leaveTransforms'],
+		pluginOptions = ['avoidTransforms', 'useTranslate3d', 'leaveTransforms', 'avoidCSSTransitions'],
 		rfxnum = /^([+-]=)?([\d+-.]+)(.*)$/,
 		rupper = /([A-Z])/g,
 		defaultEnhanceData = {
@@ -223,7 +223,7 @@ Changelog:
 				left : 0
 			}
 		},
-		valUnit = 'px',
+		//valUnit = 'px',
 
 		DATA_KEY = 'jQe',
 		CUBIC_BEZIER_OPEN = 'cubic-bezier(',
@@ -299,10 +299,14 @@ Changelog:
 		@description Return unit value ("px", "%", "em" for re-use correct one when translating)
 		@param {variant} [val] Target value
 	*/
-	function _getUnit(val){
-		var unit = (val+'').match(/\D+$/);
-			unit = (unit == 'show' || unit == 'hide' || unit==null)?'px':unit[0];
-		return unit;
+	function _getUnit(val, prop){
+		var unit = isNaN(val) ? (val+'').match(/\D+$/) : null;
+		
+		if (!!prop && !_isDirection(prop)) {
+			return ''; // no values for things like opacity
+		}
+		
+		return (!unit || unit == 'show' || unit == 'hide')?'px':unit[0];
 	};
 
 
@@ -318,41 +322,44 @@ Changelog:
 	*/
 	function _interpretValue(e, val, prop, isTransform) {
 		// this is a nasty fix, but we check for prop == 'd' to see if we're dealing with SVG, and abort
-		if (prop == "d") return;
+		if (prop == "d") return false;
 		
-		var parts = rfxnum.exec(val),
-			start = e.css(prop) === 'auto' ? 0 : e.css(prop),
+		var parts = isNaN(val) ? rfxnum.exec(val) : false,
+			start = e.css(prop) === 'auto' ? 0 : parseFloat(e.css(prop),10),
 			cleanCSSStart = typeof start == 'string' ? _cleanValue(start) : start,
 			cleanTarget = typeof val == 'string' ? _cleanValue(val) : val,
-			cleanStart = isTransform === true ? 0 : cleanCSSStart,
+			cleanStart = {
+				value: cleanTarget,  //isTransform === true ? 0 : cleanCSSStart,
+				unit: _getUnit(start, prop)
+			},
 			hidden = e.is(':hidden'),
 			translation = e.translation();
 
-		if (prop == 'left') cleanStart = parseFloat(cleanCSSStart, 10) + translation.x;
-		else if (prop == 'right') cleanStart = parseFloat(cleanCSSStart, 10) + translation.x;
-		else if (prop == 'top') cleanStart = parseFloat(cleanCSSStart, 10) + translation.y;
-		else if (prop == 'bottom') cleanStart = parseFloat(cleanCSSStart, 10) + translation.y;
+		if (prop == 'left') cleanStart.value = parseFloat(cleanCSSStart, 10) + translation.x;
+		else if (prop == 'right') cleanStart.value = parseFloat(cleanCSSStart, 10) + translation.x;
+		else if (prop == 'top') cleanStart.value = parseFloat(cleanCSSStart, 10) + translation.y;
+		else if (prop == 'bottom') cleanStart.value = parseFloat(cleanCSSStart, 10) + translation.y;
 
 		// deal with shortcuts
 		if(!parts) {
 			if(val === 'show') {
-				// set the css opacity as the start value
-				cleanStart = 1; // * e.css('opacity');
+				cleanStart.value = 1;
 				/*if (hidden) {
-					e.css({'display':'block', 'opacity': 0, avoidCSSTransitions: true});
+					e.css({'display':'block', 'opacity': cleanStart.value, avoidCSSTransitions: true});
 				}*/
 			} else if (val == 'hide') {
-				cleanStart = 0;
+				cleanStart.value = 0;
 			}
 			
-			return cleanStart;
 		} else {
-			var end = parseFloat(parts[2]);
+			var end = parseFloat(parts[2], 10);
 
 			// If a +=/-= token was provided, we're doing a relative animation
-			if (parts[1]) end = ((parts[1] === '-=' ? -1 : 1) * end) + parseInt(cleanStart, 10);
-			return end;
+			if (!!parts[1]) {
+				cleanStart.value = ((parts[1] === '-=' ? -1 : 1) * end) + parseFloat(cleanStart.value, 10);
+			}
 		}
+		return cleanStart;
 	};
 
 	/**
@@ -364,7 +371,7 @@ Changelog:
 		@param {integer} [y]
 		@param {boolean} [use3D] Use translate3d if available?
 	*/
-	function _getTranslation(x, y, use3D) {
+	function _getTranslation(x, y, use3D, valUnit) {
 		var _3D = ((use3D === true || (use3DByDefault === true && use3D !== false)) && has3D);
 		
 		// unit must be present, event if it's 0 (bug in Chrome)
@@ -386,11 +393,11 @@ Changelog:
 		@param {boolean} [isTranslatable] Is this a CSS translation?
 		@param {boolean} [use3D] Use translate3d if available?
 	*/
-	function _applyCSSTransition(e, property, duration, easing, value, isTransform, isTranslatable, use3D) {
+	function _applyCSSTransition(e, property, duration, easing, value, unit, isTransform, isTranslatable, use3D) {
 		var eCSSData = e.data(DATA_KEY),
 			enhanceData = eCSSData && !_isEmptyObject(eCSSData) ? eCSSData : jQuery.extend(true, {}, defaultEnhanceData),
 			offsetPosition = value,
-			isDirection = jQuery.inArray(property, directions) > -1;
+			isDirection = _isDirection(property);
 
 		if (isDirection && isTranslatable) {
 			var meta = enhanceData.meta,
@@ -410,7 +417,7 @@ Changelog:
 		}
 
 		// reapply data and return
-		return e.data(DATA_KEY, _applyCSSWithPrefix(e, enhanceData, property, duration, easing, offsetPosition, isTransform, isTranslatable, use3D));
+		return e.data(DATA_KEY, _applyCSSWithPrefix(e, enhanceData, property, duration, easing, offsetPosition, unit, isTransform, isTranslatable, use3D));
 	};
 
 	/**
@@ -427,7 +434,7 @@ Changelog:
 		@param {boolean} [isTranslatable] Is this a CSS translation?
 		@param {boolean} [use3D] Use translate3d if available?
 	*/
-	function _applyCSSWithPrefix(e, cssProperties, property, duration, easing, value, isTransform, isTranslatable, use3D) {
+	function _applyCSSWithPrefix(e, cssProperties, property, duration, easing, value, unit, isTransform, isTranslatable, use3D) {
 		var saveOriginal = false,
 			transform = isTransform === true && isTranslatable === true;
 
@@ -454,12 +461,13 @@ Changelog:
 			var cssProperty = (transform ? cssPrefixes[i] + 'transform' : property);
 
 			if (saveOriginal) {
-				original[tp] = e.css(tp) || 'all';
+				original[tp] = e.css(tp) || 'none';
 				original[td] = e.css(td) || '0s';
 				original[tf] = e.css(tf) || 'linear';
 			}
 
-			secondary[cssProperty] = transform ? _getTranslation(meta.left, meta.top, use3D) : value; //transform ? _getTranslation(property === 'left' ? meta.left : -meta.right, property === 'top' ? meta.top : -meta.bottom, use3D) : value;
+			//secondary[cssProperty] = transform ? _getTranslation(meta.left, meta.top, use3D) : value; 
+			secondary[cssProperty] = transform ? _getTranslation(property === 'left' ? meta.left : -meta.right, property === 'top' ? meta.top : -meta.bottom, use3D, unit) : value;
 
 			properties[tp] = (properties[tp] ? properties[tp] + ',' : '') + cssProperty;
 			properties[td] = (properties[td] ? properties[td] + ',' : '') + duration + 'ms';
@@ -525,8 +533,8 @@ Changelog:
 		@param {variant} [val]
 	*/
 	function _cleanValue(val) {
-		valUnit = _getUnit(val);
-		return parseFloat((val+'').replace(/px/i, ''));
+		var v = isNaN(val) ? (val+'').replace(/px|em|%|pt/i, '') : val;
+		return isNaN(v) ? v : parseFloat(v,10);
 	};
 
 
@@ -616,9 +624,28 @@ Changelog:
 		return translation;
 	};
 
+	function _isOptionProperty(p) {
+		return !!~jQuery.inArray(p, pluginOptions);
+	};
 	
 	function _assureDefault(props, prop) {
-		return props[prop] != undefined ? !!props[prop] : !!jQuery.fn.animate.defaults[prop];
+		return props != undefined && props[prop] != undefined ? !!props[prop] : !!jQuery.fn.animate.defaults[prop];
+	};
+	
+	function _isDirection(p) {
+		return !!~jQuery.inArray(p, directions);
+	};
+	
+	function _hasDirection(p) {
+		if (!p || !jQuery.isPlainObject(p)) {
+			return false;
+		}
+		for (var i in p) {
+			if (_isDirection(i)) {
+				return true;
+			}
+		}
+		return false;
 	};
 
 
@@ -636,14 +663,14 @@ Changelog:
 		prop = prop || {};
 		
 		// normalize values
-		if !(_isEmptyObject(prop)) {
+		if (!_isEmptyObject(prop)) {
 			prop.avoidTransforms = _assureDefault(prop, 'avoidTransforms');
 			prop.leaveTransforms = _assureDefault(prop, 'leaveTransforms');
 			prop.avoidCSSTransitions = _assureDefault(prop, 'avoidCSSTransitions');
 			prop.useTranslate3d = _assureDefault(prop, 'useTranslate3d');
 		}
 
-		var isTranslatable = (typeof prop['bottom'] !== 'undefined' || typeof prop['top'] !== 'undefined' || typeof prop['right'] !== 'undefined' || typeof prop['left'] !== 'undefined'),
+		var isTranslatable = _hasDirection(prop),
 			optall = jQuery.isPlainObject(speed) ? speed : jQuery.speed(speed, easing, callback),
 			elements = this,
 			callbackQueue = 0,
@@ -694,7 +721,7 @@ Changelog:
 
 					// if we used the fadeOut shortcut make sure elements are display:none
 					if (isHideOpacity) {
-						self.css({'display': 'none', 'opacity': 0, avoidCSSTransitions: true});
+						self.css({'display': 'none', avoidCSSTransitions: true});
 					}
 
 					// run the main callback function
@@ -704,27 +731,33 @@ Changelog:
 
 			// seperate out the properties for the relevant animation functions
 			for (var p in prop) {
-				if (jQuery.inArray(p, pluginOptions) === -1) {
-					var isDirection = jQuery.inArray(p, directions) > -1,
+				if (!_isOptionProperty(p)) {
+					var isDirection = _isDirection(p),
 						cleanVal = _interpretValue(self, prop[p], p, (isDirection && prop.avoidTransforms !== true));
 
+					// assure string values are converted to values
+					if (_isOpacityShortcut(prop)) {
+						prop[p] = (prop[p] == 'show' ? 1 : (prop[p] == 'hide' ? 0 : prop[p]));
+					}
+					
 					// converts marginLeft to margin-left, etc...
-					var cssP = p.replace(/([A-Z])/g, function(s, group1) {
+					var cssP = !p.match(/border|margin|padding/i) ? p : p.replace(/([A-Z])/g, function(s, group1) {
 					    return '-' + group1.toLowerCase();
 					});
 					
-					if (prop.avoidTransforms !== true && _appropriateProperty(cssP, cleanVal, self) && _appropriateEasing(opt.easing || 'swing')) {
+					if (!!cleanVal && prop.avoidTransforms !== true && _appropriateProperty(cssP, cleanVal.value, self) /*&& _appropriateEasing(opt.easing || 'swing')*/) {
 						_applyCSSTransition(
 							self,
 							cssP,
 							opt.duration,
 							easings[opt.easing || (jQuery.easing && jQuery.easing.def) || 'swing'], //? easings[opt.easing || 'swing'] : opt.easing || 'swing',
-							isDirection && prop.avoidTransforms === true ? cleanVal + valUnit : cleanVal,
+							/*isDirection && prop.avoidTransforms === true ? */ cleanVal.value, //: prop[p], //cleanVal,
+							cleanVal.unit,
 							isDirection && prop.avoidTransforms !== true,
 							isTranslatable,
 							prop.useTranslate3d === true);
 					} else {
-						domProperties[p] = prop[p];
+						domProperties[cssP] = prop[p];
 					}
 				}
 			}
@@ -744,7 +777,10 @@ Changelog:
 				// has to be done in a timeout to ensure transition properties are set
 				setTimeout(function() {
 					self.bind(transitionEndEvent, cssCallback).css(secondary);
-				}, 0);
+					if (secondary.opacity == 'show') {
+						self.css({'display': 'block', avoidCSSTransitions: true});
+					}
+				});
 			}
 			else {
 				// it won't get fired otherwise
@@ -811,14 +847,16 @@ Changelog:
 					restore = selfCSSData.secondary;
 
 					if (!leaveTransforms && (
-						typeof selfCSSData.meta['left_o'] !== undefined || 
-						typeof selfCSSData.meta['right_o'] !== undefined || 
-						typeof selfCSSData.meta['top_o'] !== undefined || 
-						typeof selfCSSData.meta['bottom_o'] !== undefined )) {
-						restore['left']   = typeof selfCSSData.meta['left_o']   !== undefined ? selfCSSData.meta['left_o']   : 'auto';
-						restore['right']  = typeof selfCSSData.meta['right_o']  !== undefined ? selfCSSData.meta['right_o']  : 'auto';
-						restore['top']    = typeof selfCSSData.meta['top_o']    !== undefined ? selfCSSData.meta['top_o']    : 'auto';
-						restore['bottom'] = typeof selfCSSData.meta['bottom_o'] !== undefined ? selfCSSData.meta['bottom_o'] : 'auto';
+						selfCSSData.meta['left_o'] != undefined || 
+						selfCSSData.meta['right_o'] != undefined || 
+						selfCSSData.meta['top_o'] != undefined || 
+						selfCSSData.meta['bottom_o'] != undefined )) {
+						
+						// create css object
+						restore['left']   = selfCSSData.meta['left_o']   != undefined ? selfCSSData.meta['left_o']   : 'auto';
+						restore['right']  = selfCSSData.meta['right_o']  != undefined ? selfCSSData.meta['right_o']  : 'auto';
+						restore['top']    = selfCSSData.meta['top_o']    != undefined ? selfCSSData.meta['top_o']    : 'auto';
+						restore['bottom'] = selfCSSData.meta['bottom_o'] != undefined ? selfCSSData.meta['bottom_o'] : 'auto';
 						
 						// remove the transformations
 						for (i = cssPrefixes.length - 1; i >= 0; i--) {
@@ -886,7 +924,7 @@ Changelog:
 	 */
 	jQuery.fn.delay = function( time, type, avoidCSSTransitions ) {
 		
-		avoidCSSTransitions = _assureDefault({avoidCSSTransition:avoidCSSTransitions, 'avoidCSSTransitions');
+		avoidCSSTransitions = _assureDefault({avoidCSSTransition:avoidCSSTransitions}, 'avoidCSSTransitions');
 		
 		// if no support for css 3, use the old method
 		if (!cssTransitionsSupported || !!avoidCSSTransitions) {
@@ -920,19 +958,7 @@ Changelog:
 			return true;
 		});
 	};
-	
-	
-	function _getPositionElement(node) {
-		node = $(node);
-		
-		var elem = node.offsetParent(), // default
-			position = node.css('position');
-		
-		if (position == 'fixed') {
-			elem = $(window);
-		}
-		return elem;
-	};
+
 	
 	/**
 	@public
@@ -945,15 +971,12 @@ Changelog:
 	 */
 	jQuery.fn.css = function ( name, value, avoidCSSTransitions ) {
 		var i, translate, oname = name,
-			hasProps = false, hasExtraProps = false, isGetter = false, t = jQuery(this);
+			hasProps = false, 
+			hasExtraProps = false, isGetter = false, t = jQuery(this);
 		
 		// normalize input
-		if (jQuery.isPlainObject(name) && _isEmptyObject(name)) {
-			// empty object, nothing to do
-			return this;
-			
-		} else if (!jQuery.isPlainObject(name)) {
-			if (value === undefined) {
+		if (name == undefined || !jQuery.isPlainObject(name)) {
+			if (value == undefined) {
 				isGetter = true;
 			} else {
 				name = {};
@@ -964,13 +987,7 @@ Changelog:
 							  _assureDefault(name, 'avoidCSSTransitions');
 		
 		if (!isGetter) {
-			// detect css attributes
-			for (i in name) {
-				if (!!~jQuery.inArray(i, directions)) {
-					hasProps = true;
-					break; // exit for
-				}
-			}
+			hasProps = _hasDirection(name);
 		}
 		
 		// no need for our extension, call the original method
@@ -985,8 +1002,8 @@ Changelog:
 				};
 			
 			for (i in name) {
-				// if i is not part of directions
-				if (!~jQuery.inArray(i, directions)) {
+				// if i is not part of directions and it's not an option property
+				if (!_isDirection(i) && !_isOptionProperty(i)) {
 					hasExtraProps = true;
 					extraCss[i] = name[i];
 				}
@@ -1014,6 +1031,8 @@ Changelog:
 				}
 			} else {
 				if (name.bottom != undefined) {
+					// since top AND bottom were specified
+					// maybe animate it ?
 					t.css('bottom', name.bottom, true);
 				}
 			}
@@ -1032,7 +1051,8 @@ Changelog:
 			}
 			
 			// apply the real css 3 
-			translate = _getTranslation(_cleanValue(name.left), _cleanValue(name.top), has3D);
+			// @todo, pass unit on a value basis
+			translate = _getTranslation(_cleanValue(name.left), _cleanValue(name.top), has3D, _getUnit(name.left, 'left'));
 			
 			// for every browser
 			for (i in cssPrefixes) {
