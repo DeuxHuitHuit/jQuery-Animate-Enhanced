@@ -939,7 +939,7 @@ Changelog:
 				selfCSSData = self.data(DATA_KEY);
 
 			// is this a CSS transition?
-			if (selfCSSData && !_isEmptyObject(selfCSSData)) {
+			if ( (selfCSSData && !_isEmptyObject(selfCSSData)) || type === true) {
 			
 				// replace the current delay call with a transition-delay in css3
 				for (i in cssPrefixes) {
@@ -953,7 +953,7 @@ Changelog:
 					}
 				}, time+1);
 			} else {
-				originalDelayMethod.apply(this, arguments);
+				originalDelayMethod.apply(self, arguments);
 			}
 			return true;
 		});

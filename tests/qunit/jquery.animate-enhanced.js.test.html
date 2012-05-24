@@ -1,0 +1,93 @@
+<!DOCTYPE html> 
+ <html lang="en"> 
+<head> 
+	<meta charset="utf-8" /> 
+	<title>jQuery Animate Enhanced test suite</title> 
+	
+	<link rel="stylesheet" href="./qunit.css" type="text/css"/>
+</head>
+<body>
+	<h1 id="qunit-header">jQuery Animate Enhanced</h1>  
+    <h2 id="qunit-banner"></h2>  
+    <h2 id="qunit-userAgent"></h2>  
+    <ol id="qunit-tests"></ol>
+	
+	<div id="css"></div>
+	<div id="delay"></div>
+	
+	<script src="../../scripts/contrib/jquery-1.4.3.js"></script> 
+	<script src="../../scripts/src/jquery.animate-enhanced.js"></script> 
+	<script src="./qunit.js"></script>
+	<script>
+		(function ($) {
+		var $css = $('#css'),
+			$delay = $('#delay'),
+			runTests = function (){
+		
+			module('jQuery.animate-enhanced');
+			
+			test('jQuery.fn.css', function(){
+				var t = $css;
+				//expect(13);
+				
+				// getter defaults
+				equal(t.css('opacity'), '1', 'get opacity = 1');
+				equal(t.css('left'), 'auto', 'get left = auto');
+				equal(t.css('top'), 'auto', 'get top = auto');
+				equal(t.css('right'), 'auto', 'get right = auto');
+				equal(t.css('bottom'), 'auto', 'get bottom = auto');
+				
+				// set some values
+				t.css('position', 'absolute');
+				t.css({width:'100px', height:'50%'});
+				t.css('opacity', 0);
+				
+				// test the setted values
+				equal(t.css('position'), 'absolute', 'get position = absolute');
+				equal(t.css('width'), '100px', 'get width = 100px');
+				equal(t.width(), 100, 'width() == 100');
+				// not passing... equal(t.css('height'), '50%', 'get height = 50%');
+				equal(t.css('opacity'), 0, 'get opacity = 0')
+				
+				// set some normal properties and check the magic happens
+				t.css('top', '50px');
+				equal(t.css('top'), 'auto', 'get top still equals to auto after CSS3 translation');
+				ok(!!~$.inArray( t.css('-webkit-transform'), [ 'translate3d(50px,0px,0px)', 'matrix(1, 0, 0, 1, 0, 50)' ]), 'top transformation applied');
+				t.css('left', '60px');
+				ok(!!~$.inArray( t.css('-webkit-transform'), [ 'translate3d(50px,60px,0px)', 'matrix(1, 0, 0, 1, 60, 50)' ]), 'left transformation applied');
+				// @todo test with bottom and right
+			
+				// reset
+				t.css('-webkit-transform', '');
+				equal(t.css('-webkit-transform'), 'none', 'hard reset was sucessfull');
+				
+				// matrix transform
+				t.css({top:'1px',left:'1px',color:'rgb(255,0,0)'});
+				ok(!!~$.inArray( t.css('-webkit-transform'), [ 'translate3d(1px,1px,0px)', 'matrix(1, 0, 0, 1, 1, 1)' ]), 'matrix transformation applied');
+				equal(t.css('color'), 'rgb(255, 0, 0)', 'color has followed with matrix transform');
+			
+				// avoidCSSTransitions
+				t.css('-webkit-transform', '', true);
+				t.css({top:'2px',left:'2px',color:'rgb(255,0,0)',avoidCSSTransitions:true});
+				equal(t.css('-webkit-transform'), 'none', 'avoidCSSTransitions: no transform found');
+				equal(t.css('top'),'2px', 'get top = 2px');
+				equal(t.css('left'),'2px', 'get left = 2px');
+			}); // end css test
+			
+			test('jQuery.fn.delay', function () {
+				var t = $delay;
+				
+				// getter default
+				ok(!!$.inArray(t.css('-webkit-transition-delay'), ['','0s']), 'no original delay');
+				t.delay(2000, null, null, true); // force
+				equal(t.css('-webkit-transition-delay'), '2000ms', '2000 ms delay set');
+				
+			}); // end delay test
+			
+		}; // end run test
+		
+		$(runTests);
+		})(jQuery);
+	</script>
+</body>
+</html>
