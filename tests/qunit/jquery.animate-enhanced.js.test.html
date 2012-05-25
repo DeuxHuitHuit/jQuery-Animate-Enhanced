@@ -12,19 +12,112 @@
     <h2 id="qunit-userAgent"></h2>  
     <ol id="qunit-tests"></ol>
 	
+	<div id="div"></div>
 	<div id="css"></div>
 	<div id="delay"></div>
+	<div id="translation"></div>
 	
 	<script src="../../scripts/contrib/jquery-1.4.3.js"></script> 
 	<script src="../../scripts/src/jquery.animate-enhanced.js"></script> 
 	<script src="./qunit.js"></script>
 	<script>
 		(function ($) {
-		var $css = $('#css'),
+			
+		var _private = jQuery.fn.animate.defaults._private,
+			$div = $('#div'),
+			$css = $('#css'),
 			$delay = $('#delay'),
+			$trans = $('#translation'),
+			contains = function (actual, possible, msg) {
+				return ok(!!~$.inArray(actual, possible), msg);
+			},
+			containsAll = function (actual, possible, msg) {
+				var i, yes = true;
+				if ( ($.isPlainObject(actual) || $.isArray(actual)) && 
+					 ($.isPlainObject(possible) || $.isArray(possible))) {
+					for (i in possible) {
+						if (actual[i] != possible[i]) {
+							yes = false;
+							break;
+						}
+					}
+				} else {
+					yes = false;
+				}
+				return ok(yes, msg);
+			},
 			runTests = function (){
+				
+			module('jQuery.animate-enhanced.defaults');
+			
+			test('jQuery.fn.animate.defaults', function () {
+				// assure defaults are what they should be
+				equal($.fn.animate.defaults.avoidTransforms, undefined, 'avoidTransforms = undefined');
+				equal($.fn.animate.defaults.useTranslate3d, true, 'useTranslate3d = true');
+				equal($.fn.animate.defaults.leaveTransforms, undefined, 'leaveTransforms = undefined');
+				equal($.fn.animate.defaults.avoidCSSTransitions, undefined, 'avoidCSSTransitions = undefined');
+				ok($.isPlainObject($.fn.animate.defaults._private), '_private is a plain object');
+			});
+				
+			module('jQuery.animate-enhanced._private');
+			
+			test('_getUnit', function () {
+				// function _getUnit(val, prop)
+				equal(_private._getUnit('11px'), 	'px', '11px unit\'s = px');
+				equal(_private._getUnit(0), 		'', '0 unit\'s = px');
+				equal(_private._getUnit(0, 'opacity'),'', '0 unit\'s = nothing');
+				equal(_private._getUnit(1), 		'', '1 unit\'s = px');
+				equal(_private._getUnit(1,'opacity'),'', '1 unit\'s = nothing');
+				equal(_private._getUnit('0%','left'),'%', '0% unit\'s = %');
+				equal(_private._getUnit('14pt'), 	'pt', '14pt unit\'s = pt');
+				equal(_private._getUnit('1.4em'), 	'em', '1.4em unit\'s = em');
+				equal(_private._getUnit('show'), 	'', 'show unit\'s = nothing');
+				equal(_private._getUnit('0$'), 		'', '0$ unit\'s = nothing');
+				equal(_private._getUnit(true), 		'', 'true unit\'s = nothing');
+			});
+			
+			test('_cleanValue', function () {
+				// function _cleanValue(val)
+				equal(_private._cleanValue('11px'), 	11, '11px value = 11');
+				equal(_private._cleanValue(0), 			0, '0 value = 0');
+				equal(_private._cleanValue(1), 			1, '1 value = 1');
+				equal(_private._cleanValue('0%'), 		0, '0% value = 0');
+				equal(_private._cleanValue('14pt'), 	14, '14pt value = 14');
+				equal(_private._cleanValue('1.4em'), 	1.4, '1.4em value = em');
+				equal(_private._cleanValue('show'), 	1, 'show value = 1');
+				equal(_private._cleanValue('0$'), 		'0$', '0$ value = 0$');
+				equal(_private._cleanValue(true), 		true, 'true value = true');
+			});
+			
+			test('_appropriateProperty', function () {
+				// function _appropriateProperty(prop, value, element)
+				ok(_private._appropriateProperty('width', '10px', $div), 'width 10px');
+				ok(_private._appropriateProperty('height', '10px', $div), 'height 10px');
+				ok(_private._appropriateProperty('width', 'show', $div), 'width show');
+				ok(!_private._appropriateProperty('height', 0, $div), 'height 0');
+				ok(_private._appropriateProperty('opacity', 0, $div), 'opacity 0');
+				ok(_private._appropriateProperty('left', 0, $div), 'left 0');
+			});
+			
+			test('_appropriateEasing', function () {
+				// function _appropriateEasing(easing, element)
+				ok(_private._appropriateEasing('swing', $div), 'swing');
+				ok(_private._appropriateEasing('linear', $div), 'linear');
+				ok(_private._appropriateEasing('easeIn', $div), 'easeIn');
+				ok(!_private._appropriateEasing('kkk', $div), 'kkk');
+			});
+			
+			test('_assureDefault', function () {
+				// function _assureDefault(props, prop) {
+				equal(_private._assureDefault(), false);
+				equal(_private._assureDefault('k'), false);
+				equal(_private._assureDefault({'k':0},'k'), 0);
+				equal(_private._assureDefault({useTranslate3d:false},'useTranslate3d'), false);
+				equal(_private._assureDefault({},'avoidCSSTransitions'), false);
+				equal(_private._assureDefault({avoidCSSTransitions:true},'avoidCSSTransitions'), true);
+			});
 		
-			module('jQuery.animate-enhanced');
+			module('jQuery.animate-enhanced.core');
 			
 			test('jQuery.fn.css', function(){
 				var t = $css;
@@ -52,9 +145,9 @@
 				// set some normal properties and check the magic happens
 				t.css('top', '50px');
 				equal(t.css('top'), 'auto', 'get top still equals to auto after CSS3 translation');
-				ok(!!~$.inArray( t.css('-webkit-transform'), [ 'translate3d(50px,0px,0px)', 'matrix(1, 0, 0, 1, 0, 50)' ]), 'top transformation applied');
+				contains(t.css('-webkit-transform'), [ 'translate3d(50px,0px,0px)', 'matrix(1, 0, 0, 1, 0, 50)' ], 'top transformation applied');
 				t.css('left', '60px');
-				ok(!!~$.inArray( t.css('-webkit-transform'), [ 'translate3d(50px,60px,0px)', 'matrix(1, 0, 0, 1, 60, 50)' ]), 'left transformation applied');
+				contains(t.css('-webkit-transform'), [ 'translate3d(50px,60px,0px)', 'matrix(1, 0, 0, 1, 60, 50)' ], 'left transformation applied');
 				// @todo test with bottom and right
 			
 				// reset
@@ -63,7 +156,7 @@
 				
 				// matrix transform
 				t.css({top:'1px',left:'1px',color:'rgb(255,0,0)'});
-				ok(!!~$.inArray( t.css('-webkit-transform'), [ 'translate3d(1px,1px,0px)', 'matrix(1, 0, 0, 1, 1, 1)' ]), 'matrix transformation applied');
+				contains(t.css('-webkit-transform'), [ 'translate3d(1px,1px,0px)', 'matrix(1, 0, 0, 1, 1, 1)' ], 'matrix transformation applied');
 				equal(t.css('color'), 'rgb(255, 0, 0)', 'color has followed with matrix transform');
 			
 				// avoidCSSTransitions
@@ -78,11 +171,35 @@
 				var t = $delay;
 				
 				// getter default
-				ok(!!$.inArray(t.css('-webkit-transition-delay'), ['','0s']), 'no original delay');
-				t.delay(2000, null, null, true); // force
-				equal(t.css('-webkit-transition-delay'), '2000ms', '2000 ms delay set');
+				contains(t.css('-webkit-transition-delay'), ['','0s'], 'no original delay');
+				t.delay(2000, true); // force css3
+				contains(t.css('-webkit-transition-delay'), ['2s','2000ms'], '2000 ms delay set');
+				
+				stop(); // stop test execution
+				setTimeout(function () {
+					contains(t.css('-webkit-transition-delay'), ['','0s'], 'delay has been resetted');
+					start(); // restart test execution
+				}, 2001);
 				
 			}); // end delay test
+			
+			test('jQuery.fn.translation', function(){
+				var t = $trans;
+				
+				// no translation
+				containsAll(t.translation(),{x:0,y:0}, 'default translation to (0,0)');
+				equal($().translation(), null, 'null on empty jQuery object');
+				
+				// apply css 3 translation
+				t.css('-webkit-transform','translate(-21px,65px)', true);
+				containsAll(t.translation(),{x:-21,y:65}, 'translation to (-21,65)');
+				t.css('-webkit-transform','translate(1.5px,6.5px)', true);
+				containsAll(t.translation(),{x:1.5,y:6.5}, 'translation to (1.5,6.5)');
+				// overide with css 2
+				t.css({top:'1px',left:'2px'});
+				containsAll(t.translation(),{x:2,y:1}, 'translation to (2,1) with css 2');
+			});
+			
 			
 		}; // end run test
 		

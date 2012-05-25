@@ -612,8 +612,8 @@ Changelog:
 				if (transform && (/matrix/i).test(transform)) {
 					var explodedMatrix = transform.replace(/^matrix\(/i, '').split(/, |\)$/g);
 					translation = {
-						x: parseInt(explodedMatrix[4], 10),
-						y: parseInt(explodedMatrix[5], 10)
+						x: parseFloat(explodedMatrix[4], 10),
+						y: parseFloat(explodedMatrix[5], 10)
 					};
 
 					break;
@@ -808,7 +808,25 @@ Changelog:
     	avoidTransforms: undefined,
     	useTranslate3d: true,
     	leaveTransforms: undefined,
-    	avoidCSSTransitions: undefined
+    	avoidCSSTransitions: undefined,
+    	_private: {
+			_getUnit:_getUnit,
+			_interpretValue: _interpretValue,
+			_getTranslation: _getTranslation,
+			_applyCSSTransition: _applyCSSTransition,
+			_applyCSSWithPrefix: _applyCSSWithPrefix,
+			_isBoxShortcut: _isBoxShortcut,
+			_isOpacityShortcut: _isOpacityShortcut,
+			_isEmptyObject: _isEmptyObject,
+			_cleanValue: _cleanValue,
+			_appropriateProperty: _appropriateProperty,
+			_appropriateEasing: _appropriateEasing,
+			
+			_isOptionProperty: _isOptionProperty,
+			_assureDefault: _assureDefault,
+			_isDirection: _isDirection,
+			_hasDirection: _hasDirection
+		}
     };
 
 
@@ -931,10 +949,10 @@ Changelog:
 			return originalDelayMethod.apply(this, arguments);
 		}
 		
-		var t = jQuery(this);
+		var t = jQuery(this), args = arguments;
 		
 		return t.each(function (index, elem) {
-			var self = $(elem),
+			var self = $(elem), i = null,
 				// if there this element is being animated with CSS 3
 				selfCSSData = self.data(DATA_KEY);
 
@@ -948,12 +966,12 @@ Changelog:
 				
 				// when it's done, remove the delay since it's expired
 				setTimeout(function () {
-					for (i in cssPrefixes) {
+					for (var i in cssPrefixes) {
 						self.css(cssPrefixes[i]+'transition-delay', '', true);
 					}
 				}, time+1);
 			} else {
-				originalDelayMethod.apply(self, arguments);
+				originalDelayMethod.apply(self, args);
 			}
 			return true;
 		});
