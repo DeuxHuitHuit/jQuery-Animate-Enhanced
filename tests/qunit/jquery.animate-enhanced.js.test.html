@@ -64,16 +64,20 @@
 			test('_getUnit', function () {
 				// function _getUnit(val, prop)
 				equal(_private._getUnit('11px'), 	'px', '11px unit\'s = px');
-				equal(_private._getUnit(0), 		'', '0 unit\'s = px');
-				equal(_private._getUnit(0, 'opacity'),'', '0 unit\'s = nothing');
-				equal(_private._getUnit(1), 		'', '1 unit\'s = px');
+				equal(_private._getUnit(0), 		'px', '0 unit\'s = px');
+				equal(_private._getUnit(0, 'opacity'),'', '0 unit\'s = nothing when opacity');
+				equal(_private._getUnit(0, 'width'),'px', '0 unit\'s = nothing when width');
+				equal(_private._getUnit(1), 		'px', '1 unit\'s = px');
+				equal(_private._getUnit(1, 'opacity'),'', '1 unit\'s = nothing when opacity');
 				equal(_private._getUnit(1,'opacity'),'', '1 unit\'s = nothing');
 				equal(_private._getUnit('0%','left'),'%', '0% unit\'s = %');
 				equal(_private._getUnit('14pt'), 	'pt', '14pt unit\'s = pt');
 				equal(_private._getUnit('1.4em'), 	'em', '1.4em unit\'s = em');
-				equal(_private._getUnit('show'), 	'', 'show unit\'s = nothing');
-				equal(_private._getUnit('0$'), 		'', '0$ unit\'s = nothing');
+				equal(_private._getUnit('show'), 	'px', 'show unit\'s = px');
+				equal(_private._getUnit('show', 'opacity'),'', 'show unit\'s = nothing when opacity');
+				equal(_private._getUnit('0$'), 		'$', '0$ unit\'s = $');
 				equal(_private._getUnit(true), 		'', 'true unit\'s = nothing');
+				equal(_private._getUnit(false), 	'', 'false unit\'s = nothing');
 			});
 			
 			test('_cleanValue', function () {
@@ -84,7 +88,7 @@
 				equal(_private._cleanValue('0%'), 		0, '0% value = 0');
 				equal(_private._cleanValue('14pt'), 	14, '14pt value = 14');
 				equal(_private._cleanValue('1.4em'), 	1.4, '1.4em value = em');
-				equal(_private._cleanValue('show'), 	1, 'show value = 1');
+				equal(_private._cleanValue('show'), 	'show', 'show value = show');
 				equal(_private._cleanValue('0$'), 		'0$', '0$ value = 0$');
 				equal(_private._cleanValue(true), 		true, 'true value = true');
 			});
@@ -115,6 +119,47 @@
 				equal(_private._assureDefault({useTranslate3d:false},'useTranslate3d'), false);
 				equal(_private._assureDefault({},'avoidCSSTransitions'), false);
 				equal(_private._assureDefault({avoidCSSTransitions:true},'avoidCSSTransitions'), true);
+			});
+			
+			test('_isOptionProperty', function () {
+				// function _isOptionProperty(p)
+				ok(_private._isOptionProperty('avoidTransforms'), 'avoidTransforms');
+				ok(_private._isOptionProperty('useTranslate3d'), 'useTranslate3d');
+				ok(_private._isOptionProperty('leaveTransforms'), 'easeIn');
+				ok(_private._isOptionProperty('avoidCSSTransitions'), 'avoidCSSTransitions');
+				ok(!_private._isOptionProperty('kkk'), 'kkk');
+			});
+		
+			test('_interpretValue', function () {
+				// function _interpretValue(e, val, prop, isTransform) 
+				containsAll(_private._interpretValue($div, '11px', 'width', true), 		{value:11,unit:'px'}, 'width 11px');
+				
+				// those two test fails... seems like this method has no responsability whatsoever
+				// most of the time, it returns the current CSS value... when it should calculte the end value
+				//containsAll(_private._interpretValue($div, 0, 'left', true), 			{value:0,unit:'px'}, 'left 0px');
+				//containsAll(_private._interpretValue($div, 1, 'right', true), 			{value:1,unit:'px'}, 'right 1px');
+				containsAll(_private._interpretValue($div, 0.5, 'opacity', true), 		{value:0.5,unit:''}, 'opacity 0.5');
+				// same here
+				//containsAll(_private._interpretValue($div, '0%', 'margin-left', true), 	{value:0,unit:'%'}, 'margin-left 0%');
+				//containsAll(_private._interpretValue($div, '14pt', 'font-size', false), {value:14,unit:'pt'}, 'font-size: 14pt');
+				//containsAll(_private._interpretValue($div, '1.4em', 'height', false), 	{value:1.4,unit:'em'}, 'height: 1.4em');
+				containsAll(_private._interpretValue($div, 'show', 'opacity', true), 	{value:1,unit:''}, 'opacity show -> 1');
+				//containsAll(_private._interpretValue($div, '0$', 'border-top', false), 	{value:0,unit:'$'},'border-top 0$');
+				//containsAll(_private._interpretValue($div, true, 'display', true), 		{value:true,unit:''}, 'display true');
+			});
+			
+			test('_getTranslation', function () {
+				// function _getTranslation(x, y, z, use3D, xUnit, yUnit, xUnit)
+				equal(_private._getTranslation(0,0,0), 'translate3d(0px,0px,0px)', '3d by default');
+				jQuery.fn.animate.defaults.useTranslate3d = false;
+				equal(_private._getTranslation(0,0,0), 'translate(0px,0px)', 'no 3d by default');
+				equal(_private._getTranslation(0,0,0,true), 'translate3d(0px,0px,0px)', 'explicit 3d');
+				jQuery.fn.animate.defaults.useTranslate3d = true;
+				equal(_private._getTranslation(1,3,2,false), 'translate(1px,3px)','explicit 2d');
+				equal(_private._getTranslation(1,3,2,true), 'translate3d(1px,3px,2px)','3d(1,3,2)');
+				equal(_private._getTranslation(-1,-3,-2,true), 'translate3d(-1px,-3px,-2px)','ed(-1,-3,-2)');
+				equal(_private._getTranslation(10,30,20,true,'em'), 'translate3d(10em,30em,20em)','all defaults unit to em');
+				equal(_private._getTranslation(10,30,20,true,'em','px','%'), 'translate3d(10em,30px,20%)','(10em,30px,20%)');
 			});
 		
 			module('jQuery.animate-enhanced.core');
@@ -175,11 +220,26 @@
 				t.delay(2000, true); // force css3
 				contains(t.css('-webkit-transition-delay'), ['2s','2000ms'], '2000 ms delay set');
 				
+				t.css('-webkit-transition-delay',''); // reset, do not use .stop here
+				t.delay(500, true); // force css3
+				contains(t.css('-webkit-transition-delay'), ['0.5s','500ms'], '500 ms delay set');
+				
 				stop(); // stop test execution
+				
 				setTimeout(function () {
-					contains(t.css('-webkit-transition-delay'), ['','0s'], 'delay has been resetted');
-					start(); // restart test execution
-				}, 2001);
+					contains(t.css('-webkit-transition-delay'), ['','0s','0ms'], 'delay has been resetted');
+					
+					t.delay(100, false).animate({'line-height':'10px'}, 30);
+					// verify that anim has not been started here
+					contains(t.css('line-height'), ['auto','0px'], 'anim has not started');
+					
+					setTimeout(function () {
+						// verify that anim is done
+						equal(t.css('line-height'), '10px', 'anim has gone ok');
+						
+						start(); // restart test execution
+					},150);	
+				}, 501);
 				
 			}); // end delay test
 			

@@ -210,10 +210,12 @@ Changelog:
 	// ----------
 	var	cssTransitionProperties = ['top', 'right', 'bottom', 'left', 'opacity', 'height', 'width', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom'],
 		directions = ['top', 'right', 'bottom', 'left'],
+		noUnitProperties = ['opacity'],
 		cssPrefixes = ['', '-webkit-', '-moz-', '-o-', '-ms-'],
 		pluginOptions = ['avoidTransforms', 'useTranslate3d', 'leaveTransforms', 'avoidCSSTransitions'],
 		rfxnum = /^([+-]=)?([\d+-.]+)(.*)$/,
 		rupper = /([A-Z])/g,
+		originalAnimatedFilter = null,
 		defaultEnhanceData = {
 			secondary: {},
 			meta: {
@@ -223,51 +225,47 @@ Changelog:
 				left : 0
 			}
 		},
-		//valUnit = 'px',
-
+		// Constants 
 		DATA_KEY = 'jQe',
 		CUBIC_BEZIER_OPEN = 'cubic-bezier(',
 		CUBIC_BEZIER_CLOSE = ')',
 		easings = {
-				bounce: CUBIC_BEZIER_OPEN + '0.0, 0.35, .5, 1.3' + CUBIC_BEZIER_CLOSE,
-				linear: 'linear',
-				swing: 'ease-in-out',
-				ease: 'ease', // (0.25, 0.1, 0.25, 1.0)
-				easeIn: 'ease-in', // (0.42, 0, 1.0, 1.0)
-				easeOut: 'ease-out', // (0, 0, 0.58, 1.0),
-				easeInOut: 'ease-in-out', // (0.42, 0, 0.58, 1.0)
+			bounce: CUBIC_BEZIER_OPEN + '0.0, 0.35, .5, 1.3' + CUBIC_BEZIER_CLOSE,
+			linear: 'linear',
+			swing: 'ease-in-out',
+			ease: 'ease', // (0.25, 0.1, 0.25, 1.0)
+			easeIn: 'ease-in', // (0.42, 0, 1.0, 1.0)
+			easeOut: 'ease-out', // (0, 0, 0.58, 1.0),
+			easeInOut: 'ease-in-out', // (0.42, 0, 0.58, 1.0)
 
-				// Penner equation approximations from Matthew Lein's Ceaser: http://matthewlein.com/ceaser/
-				easeInQuad:     CUBIC_BEZIER_OPEN + '0.550, 0.085, 0.680, 0.530' + CUBIC_BEZIER_CLOSE,
-				easeInCubic:    CUBIC_BEZIER_OPEN + '0.550, 0.055, 0.675, 0.190' + CUBIC_BEZIER_CLOSE,
-				easeInQuart:    CUBIC_BEZIER_OPEN + '0.895, 0.030, 0.685, 0.220' + CUBIC_BEZIER_CLOSE,
-				easeInQuint:    CUBIC_BEZIER_OPEN + '0.755, 0.050, 0.855, 0.060' + CUBIC_BEZIER_CLOSE,
-				easeInSine:     CUBIC_BEZIER_OPEN + '0.470, 0.000, 0.745, 0.715' + CUBIC_BEZIER_CLOSE,
-				easeInExpo:     CUBIC_BEZIER_OPEN + '0.950, 0.050, 0.795, 0.035' + CUBIC_BEZIER_CLOSE,
-				easeInCirc:     CUBIC_BEZIER_OPEN + '0.600, 0.040, 0.980, 0.335' + CUBIC_BEZIER_CLOSE,
-				easeInBack:     CUBIC_BEZIER_OPEN + '0.600, -0.280, 0.735, 0.045' + CUBIC_BEZIER_CLOSE,
-				easeOutQuad:    CUBIC_BEZIER_OPEN + '0.250, 0.460, 0.450, 0.940' + CUBIC_BEZIER_CLOSE,
-				easeOutCubic:   CUBIC_BEZIER_OPEN + '0.215, 0.610, 0.355, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeOutQuart:   CUBIC_BEZIER_OPEN + '0.165, 0.840, 0.440, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeOutQuint:   CUBIC_BEZIER_OPEN + '0.230, 1.000, 0.320, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeOutSine:    CUBIC_BEZIER_OPEN + '0.390, 0.575, 0.565, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeOutExpo:    CUBIC_BEZIER_OPEN + '0.190, 1.000, 0.220, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeOutCirc:    CUBIC_BEZIER_OPEN + '0.075, 0.820, 0.165, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeOutBack:    CUBIC_BEZIER_OPEN + '0.175, 0.885, 0.320, 1.275' + CUBIC_BEZIER_CLOSE,
-				easeInOutQuad:  CUBIC_BEZIER_OPEN + '0.455, 0.030, 0.515, 0.955' + CUBIC_BEZIER_CLOSE,
-				easeInOutCubic: CUBIC_BEZIER_OPEN + '0.645, 0.045, 0.355, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeInOutQuart: CUBIC_BEZIER_OPEN + '0.770, 0.000, 0.175, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeInOutQuint: CUBIC_BEZIER_OPEN + '0.860, 0.000, 0.070, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeInOutSine:  CUBIC_BEZIER_OPEN + '0.445, 0.050, 0.550, 0.950' + CUBIC_BEZIER_CLOSE,
-				easeInOutExpo:  CUBIC_BEZIER_OPEN + '1.000, 0.000, 0.000, 1.000' + CUBIC_BEZIER_CLOSE,
-				easeInOutCirc:  CUBIC_BEZIER_OPEN + '0.785, 0.135, 0.150, 0.860' + CUBIC_BEZIER_CLOSE,
-				easeInOutBack:  CUBIC_BEZIER_OPEN + '0.680, -0.550, 0.265, 1.550' + CUBIC_BEZIER_CLOSE
-			},
-
-		originalAnimatedFilter = null,
-		//pluginDisabledDefault = false, @see jQuery.fn.animate.avoidCSSTransitions
-
-
+			// Penner equation approximations from Matthew Lein's Ceaser: http://matthewlein.com/ceaser/
+			easeInQuad:     CUBIC_BEZIER_OPEN + '0.550, 0.085, 0.680, 0.530' + CUBIC_BEZIER_CLOSE,
+			easeInCubic:    CUBIC_BEZIER_OPEN + '0.550, 0.055, 0.675, 0.190' + CUBIC_BEZIER_CLOSE,
+			easeInQuart:    CUBIC_BEZIER_OPEN + '0.895, 0.030, 0.685, 0.220' + CUBIC_BEZIER_CLOSE,
+			easeInQuint:    CUBIC_BEZIER_OPEN + '0.755, 0.050, 0.855, 0.060' + CUBIC_BEZIER_CLOSE,
+			easeInSine:     CUBIC_BEZIER_OPEN + '0.470, 0.000, 0.745, 0.715' + CUBIC_BEZIER_CLOSE,
+			easeInExpo:     CUBIC_BEZIER_OPEN + '0.950, 0.050, 0.795, 0.035' + CUBIC_BEZIER_CLOSE,
+			easeInCirc:     CUBIC_BEZIER_OPEN + '0.600, 0.040, 0.980, 0.335' + CUBIC_BEZIER_CLOSE,
+			easeInBack:     CUBIC_BEZIER_OPEN + '0.600, -0.280, 0.735, 0.045' + CUBIC_BEZIER_CLOSE,
+			easeOutQuad:    CUBIC_BEZIER_OPEN + '0.250, 0.460, 0.450, 0.940' + CUBIC_BEZIER_CLOSE,
+			easeOutCubic:   CUBIC_BEZIER_OPEN + '0.215, 0.610, 0.355, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeOutQuart:   CUBIC_BEZIER_OPEN + '0.165, 0.840, 0.440, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeOutQuint:   CUBIC_BEZIER_OPEN + '0.230, 1.000, 0.320, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeOutSine:    CUBIC_BEZIER_OPEN + '0.390, 0.575, 0.565, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeOutExpo:    CUBIC_BEZIER_OPEN + '0.190, 1.000, 0.220, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeOutCirc:    CUBIC_BEZIER_OPEN + '0.075, 0.820, 0.165, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeOutBack:    CUBIC_BEZIER_OPEN + '0.175, 0.885, 0.320, 1.275' + CUBIC_BEZIER_CLOSE,
+			easeInOutQuad:  CUBIC_BEZIER_OPEN + '0.455, 0.030, 0.515, 0.955' + CUBIC_BEZIER_CLOSE,
+			easeInOutCubic: CUBIC_BEZIER_OPEN + '0.645, 0.045, 0.355, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeInOutQuart: CUBIC_BEZIER_OPEN + '0.770, 0.000, 0.175, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeInOutQuint: CUBIC_BEZIER_OPEN + '0.860, 0.000, 0.070, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeInOutSine:  CUBIC_BEZIER_OPEN + '0.445, 0.050, 0.550, 0.950' + CUBIC_BEZIER_CLOSE,
+			easeInOutExpo:  CUBIC_BEZIER_OPEN + '1.000, 0.000, 0.000, 1.000' + CUBIC_BEZIER_CLOSE,
+			easeInOutCirc:  CUBIC_BEZIER_OPEN + '0.785, 0.135, 0.150, 0.860' + CUBIC_BEZIER_CLOSE,
+			easeInOutBack:  CUBIC_BEZIER_OPEN + '0.680, -0.550, 0.265, 1.550' + CUBIC_BEZIER_CLOSE
+		},
+	
+	
 	// ----------
 	// Check if this browser supports CSS3 transitions
 	// ----------
@@ -302,7 +300,7 @@ Changelog:
 	function _getUnit(val, prop){
 		var unit = isNaN(val) ? (val+'').match(/\D+$/) : null;
 		
-		if (!!prop && !_isDirection(prop)) {
+		if (val === false || val === true || (!!prop && !!~jQuery.inArray(prop, noUnitProperties))) {
 			return ''; // no values for things like opacity
 		}
 		
@@ -369,13 +367,30 @@ Changelog:
 		@description Make a translate or translate3d string
 		@param {integer} [x]
 		@param {integer} [y]
+		@param {integer} [z]
 		@param {boolean} [use3D] Use translate3d if available?
+		@param {integer} [xUnit]
+		@param {integer} [yUnit]
+		@param {integer} [zUnit]
 	*/
-	function _getTranslation(x, y, use3D, valUnit) {
-		var _3D = ((use3D === true || (use3DByDefault === true && use3D !== false)) && has3D);
+	function _getTranslation(x, y, z, use3D, xUnit, yUnit, zUnit) {
+		// assure unit value
+		xUnit = xUnit || 'px'; // unit must be present, event if it's 0 (bug in Chrome)
+		yUnit = yUnit || xUnit;
+		zUnit = zUnit || xUnit;
+		// assure values with units
+		x = x + xUnit;
+		y = y + yUnit;
+		z = z + zUnit;
 		
-		// unit must be present, event if it's 0 (bug in Chrome)
-		return 'translate' + (_3D ? '3d(' : '(') + x + valUnit + ',' + y + valUnit + (_3D ? ',0' + valUnit + ')' : ')');
+		// fix here, since this variable will disapear
+		use3DByDefault = jQuery.fn.animate.defaults.useTranslate3d;
+		
+		var _3D = (has3D && (use3D === true || (use3DByDefault === true && use3D !== false))),
+			prefix = (_3D ? '3d(' : '('),
+			suffix = (_3D ? ',' + z + ')' : ')');
+		
+		return 'translate' + prefix + x + ',' + y + suffix;
 	};
 
 
@@ -467,7 +482,10 @@ Changelog:
 			}
 
 			//secondary[cssProperty] = transform ? _getTranslation(meta.left, meta.top, use3D) : value; 
-			secondary[cssProperty] = transform ? _getTranslation(property === 'left' ? meta.left : -meta.right, property === 'top' ? meta.top : -meta.bottom, use3D, unit) : value;
+			secondary[cssProperty] = transform ? _getTranslation(
+											property === 'left' ? meta.left : -meta.right, 
+											property === 'top' ? meta.top : -meta.bottom, 
+											0, use3D, unit) : value;
 
 			properties[tp] = (properties[tp] ? properties[tp] + ',' : '') + cssProperty;
 			properties[td] = (properties[td] ? properties[td] + ',' : '') + duration + 'ms';
@@ -533,7 +551,11 @@ Changelog:
 		@param {variant} [val]
 	*/
 	function _cleanValue(val) {
+		if (val === true || val === false) {
+			return val; // always return boolean values
+		}
 		var v = isNaN(val) ? (val+'').replace(/px|em|%|pt/i, '') : val;
+		
 		return isNaN(v) ? v : parseFloat(v,10);
 	};
 
@@ -729,6 +751,7 @@ Changelog:
 				},
 				domProperties = {};
 
+			// *** code starts here ***
 			// seperate out the properties for the relevant animation functions
 			for (var p in prop) {
 				if (!_isOptionProperty(p)) {
@@ -762,8 +785,10 @@ Changelog:
 				}
 			}
 
+			// unbind any transition events
 			self.unbind(transitionEndEvent);
 
+			// get our calculated data
 			var selfCSSData = self.data(DATA_KEY);
 
 			if (selfCSSData && !_isEmptyObject(selfCSSData) && !_isEmptyObject(selfCSSData.secondary)) {
@@ -1070,7 +1095,7 @@ Changelog:
 			
 			// apply the real css 3 
 			// @todo, pass unit on a value basis
-			translate = _getTranslation(_cleanValue(name.left), _cleanValue(name.top), has3D, _getUnit(name.left, 'left'));
+			translate = _getTranslation(_cleanValue(name.left), _cleanValue(name.top), 0, has3D, _getUnit(name.left, 'left'), _getUnit(name.top, 'top'));
 			
 			// for every browser
 			for (i in cssPrefixes) {
