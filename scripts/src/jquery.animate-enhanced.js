@@ -203,14 +203,15 @@ Changelog:
 
 (function(jQuery, originalAnimateMethod, originalStopMethod, originalCssMethod, originalDelayMethod, undefined) {
 
+	// use script parser rules: creates better code
 	"use strict";
 	
 	// ----------
 	// Plugin variables
 	// ----------
-	var	cssTransitionProperties = ['top', 'right', 'bottom', 'left', 'opacity', 'height', 'width', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom'],
-		directions = ['top', 'right', 'bottom', 'left'],
-		noUnitProperties = ['opacity'],
+	var	cssTransitionProperties = 'top right bottom left opacity height width margin-left margin-right margin-top margin-bottom border-left border-right border-top border-bottom padding-left padding-right padding-top padding-bottom'.split(' '),
+		directions = 'top right bottom left'.split(' '),
+		noUnitProperties = 'opacity'.split(' '),
 		cssPrefixes = ['', '-webkit-', '-moz-', '-o-', '-ms-'],
 		pluginOptions = ['avoidTransforms', 'useTranslate3d', 'leaveTransforms', 'avoidCSSTransitions'],
 		rfxnum = /^([+-]=)?([\d+-.]+)(.*)$/,
@@ -632,9 +633,9 @@ Changelog:
 			};
 
 		if (cStyle) {
-			for (var i = cssPrefixes.length - 1; i >= 0; i--) {
+			for (var i in cssPrefixes) {
 				var transform = cStyle.getPropertyValue(cssPrefixes[i] + 'transform');
-				if (transform && (/matrix/i).test(transform)) {
+				if (!!transform && (/matrix/i).test(transform)) {
 					var explodedMatrix = transform.replace(/^matrix\(/i, '').split(/, |\)$/g);
 					translation = {
 						x: parseFloat(explodedMatrix[4], 10),

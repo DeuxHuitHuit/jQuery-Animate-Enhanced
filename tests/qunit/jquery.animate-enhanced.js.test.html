@@ -165,7 +165,7 @@
 			test('_applyCSSWithPrefix', function(){
 				// function _applyCSSWithPrefix(e, cssProperties, property, duration, easing, value, unit, isTransform, isTranslatable, use3D)
 				var t = $div,
-					css = _private._applyCSSWithPrefix(t, {},'opacity', 1000, 'linear', 0, 'px', true, false, true);
+					css = _private._applyCSSWithPrefix(t, null,'opacity', 1000, 'linear', 0, 'px', true, false, true);
 					
 				equal(css.original['transition-property'], 'none','original transition-property none');
 				equal(css.original['transition-timing-function'], 'linear','original transition-timing-function linear');
@@ -175,18 +175,26 @@
 				equal(css.properties['transition-timing-function'], 'linear','transition-timing linear');
 				equal(css.properties['transition-duration'], '1000ms','transition-duration 1000ms');
 				
-				css = _private._applyCSSWithPrefix(t, css, 'transform', 2000, 'ease-in', 1, '%', true, true, true);
+				// fixing up the input...
+				css.meta.left = '3%';
+				css.meta.top = '4em';
+				// this next call should be revised
+				// the _applyCSSWithPrefix() should not have the responsability to
+				// change the 'left' property to 'transform'
+				css = _private._applyCSSWithPrefix(t, css, 'left', 2000, 'ease-in', 1, '%', true, true, true);
 				
 				equal(css.original['transition-property'], 'none','original transition-property none');
 				equal(css.original['transition-timing-function'], 'linear','original transition-timing-function linear');
 				equal(css.original['transition-duration'], '0s','original transition-duration 0s');
 				equal(css.secondary.opacity, 0,'secondary opacity still present');
-				equal(css.secondary.transform, 'translate3d(1%,NaN%,0%)','secondary transform has been added');
+				equal(css.secondary.transform, 'translate3d(3%,4em,0%)','secondary transform has been added');
 				equal(css.properties['transition-property'], 'opacity,transform','transition-property opacity,left');
 				equal(css.properties['transition-timing-function'], 'linear,ease-in','transition-timing linear,ease-in');
 				equal(css.properties['transition-duration'], '1000ms,2000ms','transition-duration 1000ms,2000ms');
 			
-				css = _private._applyCSSWithPrefix(t, css, 'top', 2000, 'ease-in', 2, 'px', true, true, true);
+				/*
+				 * A lot more to come...
+				 * css = _private._applyCSSWithPrefix(t, css, 'top', 2000, 'ease-in', 2, 'px', true, true, true);
 				
 				equal(css.original['transition-property'], 'none','original transition-property none');
 				equal(css.original['transition-timing-function'], 'linear','original transition-timing-function linear');
@@ -196,7 +204,7 @@
 				equal(css.properties['transition-property'], 'opacity,transform','transition-property opacity,left');
 				equal(css.properties['transition-timing-function'], 'linear,ease-in','transition-timing linear,ease-in');
 				equal(css.properties['transition-duration'], '1000ms,2000ms','transition-duration 1000ms,2000ms');
-			
+				*/
 			});
 			
 			test('_isBoxShortcut', function () {
@@ -231,6 +239,10 @@
 				equal(t.css('top'), 'auto', 'get top = auto');
 				equal(t.css('right'), 'auto', 'get right = auto');
 				equal(t.css('bottom'), 'auto', 'get bottom = auto');
+				ok(t.css('width') != '0px', 'get width = auto');
+				equal(t.css('height'), '0px', 'get height = auto');
+				equal(t.css('position'), 'static', 'get position = static');
+				equal(t.css('display'), 'block', 'get display = bloc');
 				
 				// set some values
 				t.css('position', 'absolute');
@@ -301,20 +313,25 @@
 			}); // end delay test
 			
 			test('jQuery.fn.translation', function(){
+				// note: the goal here is to test the translation() method only
+				// not any of the features of the css() method
 				var t = $trans;
 				
 				// no translation
 				containsAll(t.translation(),{x:0,y:0}, 'default translation to (0,0)');
 				equal($().translation(), null, 'null on empty jQuery object');
 				
-				// apply css 3 translation
+				// apply css 3 translation directly
 				t.css('-webkit-transform','translate(-21px,65px)', true);
 				containsAll(t.translation(),{x:-21,y:65}, 'translation to (-21,65)');
 				t.css('-webkit-transform','translate(1.5px,6.5px)', true);
-				containsAll(t.translation(),{x:1.5,y:6.5}, 'translation to (1.5,6.5)');
-				// overide with css 2
-				t.css({top:'1px',left:'2px'});
-				containsAll(t.translation(),{x:2,y:1}, 'translation to (2,1) with css 2');
+				containsAll(t.translation(),{x:1.5,y:6.5}, 'translation to (1.5,6.5) (float)');
+				// overide with css 2 -- test that css2 don't interfer with our calculation
+				t.css({top:'1px',left:'2px','-webkit-transform':'',avoidCSSTransitions:true});
+				containsAll(t.translation(),{x:0,y:0}, 'translation to (2,1) with css 2');
+				// reset
+				t.css({top:'',left:'',avoidCSSTransitions:true});
+				containsAll(t.translation(),{x:0,y:0}, 'reset to default translation to (0,0)');
 			});
 			
 			asyncTest('jQuery.fn.animate', function(){
@@ -328,6 +345,42 @@
 			});
 			
 			asyncTest('jQuery.fn.stop', function(){
+				expect(0);
+				start();
+			});
+			
+			/****** compatiblity tests ********/
+			asyncTest('jQuery.fn.fadeIn', function(){
+				expect(0);
+				start();
+			});
+			
+			asyncTest('jQuery.fn.fadeOut', function(){
+				expect(0);
+				start();
+			});
+			
+			asyncTest('jQuery.fn.fadeTo', function(){
+				expect(0);
+				start();
+			});
+			
+			asyncTest('jQuery.fn.slideUp', function(){
+				expect(0);
+				start();
+			});
+			
+			asyncTest('jQuery.fn.slideDown', function(){
+				expect(0);
+				start();
+			});
+			
+			asyncTest('jQuery.fn.show', function(){
+				expect(0);
+				start();
+			});
+			
+			asyncTest('jQuery.fn.hide', function(){
 				expect(0);
 				start();
 			});
