@@ -460,6 +460,9 @@ Changelog:
 			};
 			saveOriginal = true;
 		}
+		
+		// assure default objects
+		cssProperties.meta = cssProperties.meta || {};
 		cssProperties.properties = cssProperties.properties || {avoidCSSTransitions:true};
 		cssProperties.secondary = cssProperties.secondary || {avoidCSSTransitions:true};
 
@@ -483,8 +486,8 @@ Changelog:
 
 			//secondary[cssProperty] = transform ? _getTranslation(meta.left, meta.top, use3D) : value; 
 			secondary[cssProperty] = transform ? _getTranslation(
-											property === 'left' ? meta.left : -meta.right, 
-											property === 'top' ? meta.top : -meta.bottom, 
+											property === 'left' ? meta.left || 0 : -meta.right, 
+											property === 'top' ? meta.top || 0 : -meta.bottom, 
 											0, use3D, unit) : value;
 
 			properties[tp] = (properties[tp] ? properties[tp] + ',' : '') + cssProperty;

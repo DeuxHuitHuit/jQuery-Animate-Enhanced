@@ -7,7 +7,7 @@
 	<link rel="stylesheet" href="./qunit.css" type="text/css"/>
 </head>
 <body>
-	<h1 id="qunit-header">jQuery Animate Enhanced</h1>  
+	<h1 id="qunit-header">jQuery Animate Enhanced - Passes only in Webkit...</h1>  
     <h2 id="qunit-banner"></h2>  
     <h2 id="qunit-userAgent"></h2>  
     <ol id="qunit-tests"></ol>
@@ -113,12 +113,12 @@
 			
 			test('_assureDefault', function () {
 				// function _assureDefault(props, prop) {
-				equal(_private._assureDefault(), false);
-				equal(_private._assureDefault('k'), false);
-				equal(_private._assureDefault({'k':0},'k'), 0);
-				equal(_private._assureDefault({useTranslate3d:false},'useTranslate3d'), false);
-				equal(_private._assureDefault({},'avoidCSSTransitions'), false);
-				equal(_private._assureDefault({avoidCSSTransitions:true},'avoidCSSTransitions'), true);
+				equal(_private._assureDefault(), false,'false when no arguments');
+				equal(_private._assureDefault('k'), false,'false for unknow property');
+				equal(_private._assureDefault({'k':0},'k'), 0,'0 for explicit property');
+				equal(_private._assureDefault({useTranslate3d:false},'useTranslate3d'), false, 'false for property defaulted to true');
+				equal(_private._assureDefault({},'avoidCSSTransitions'), false, 'false for default property');
+				equal(_private._assureDefault({avoidCSSTransitions:true},'avoidCSSTransitions', 'true for explicit property'), true);
 			});
 			
 			test('_isOptionProperty', function () {
@@ -161,7 +161,64 @@
 				equal(_private._getTranslation(10,30,20,true,'em'), 'translate3d(10em,30em,20em)','all defaults unit to em');
 				equal(_private._getTranslation(10,30,20,true,'em','px','%'), 'translate3d(10em,30px,20%)','(10em,30px,20%)');
 			});
-		
+			
+			test('_applyCSSWithPrefix', function(){
+				// function _applyCSSWithPrefix(e, cssProperties, property, duration, easing, value, unit, isTransform, isTranslatable, use3D)
+				var t = $div,
+					css = _private._applyCSSWithPrefix(t, {},'opacity', 1000, 'linear', 0, 'px', true, false, true);
+					
+				equal(css.original['transition-property'], 'none','original transition-property none');
+				equal(css.original['transition-timing-function'], 'linear','original transition-timing-function linear');
+				equal(css.original['transition-duration'], '0s','original transition-duration 0s');
+				equal(css.secondary.opacity, 0,'secondary opacity');
+				equal(css.properties['transition-property'], 'opacity','transition-property opacity');
+				equal(css.properties['transition-timing-function'], 'linear','transition-timing linear');
+				equal(css.properties['transition-duration'], '1000ms','transition-duration 1000ms');
+				
+				css = _private._applyCSSWithPrefix(t, css, 'transform', 2000, 'ease-in', 1, '%', true, true, true);
+				
+				equal(css.original['transition-property'], 'none','original transition-property none');
+				equal(css.original['transition-timing-function'], 'linear','original transition-timing-function linear');
+				equal(css.original['transition-duration'], '0s','original transition-duration 0s');
+				equal(css.secondary.opacity, 0,'secondary opacity still present');
+				equal(css.secondary.transform, 'translate3d(1%,NaN%,0%)','secondary transform has been added');
+				equal(css.properties['transition-property'], 'opacity,transform','transition-property opacity,left');
+				equal(css.properties['transition-timing-function'], 'linear,ease-in','transition-timing linear,ease-in');
+				equal(css.properties['transition-duration'], '1000ms,2000ms','transition-duration 1000ms,2000ms');
+			
+				css = _private._applyCSSWithPrefix(t, css, 'top', 2000, 'ease-in', 2, 'px', true, true, true);
+				
+				equal(css.original['transition-property'], 'none','original transition-property none');
+				equal(css.original['transition-timing-function'], 'linear','original transition-timing-function linear');
+				equal(css.original['transition-duration'], '0s','original transition-duration 0s');
+				equal(css.secondary.opacity, 0,'secondary opacity still present');
+				equal(css.secondary.transform, 'translate3d(1%,2px,0%)','secondary transform has been modified');
+				equal(css.properties['transition-property'], 'opacity,transform','transition-property opacity,left');
+				equal(css.properties['transition-timing-function'], 'linear,ease-in','transition-timing linear,ease-in');
+				equal(css.properties['transition-duration'], '1000ms,2000ms','transition-duration 1000ms,2000ms');
+			
+			});
+			
+			test('_isBoxShortcut', function () {
+				expect(0);
+			});
+			
+			test('_isOpacityShortcut', function () {
+				expect(0);
+			});
+			
+			test('_isEmptyObject', function () {
+				expect(0);
+			});
+			
+			test('_isDirection', function () {
+				expect(0);
+			});
+			
+			test('_hasDirection', function () {
+				expect(0);
+			});
+			
 			module('jQuery.animate-enhanced.core');
 			
 			test('jQuery.fn.css', function(){
@@ -258,6 +315,21 @@
 				// overide with css 2
 				t.css({top:'1px',left:'2px'});
 				containsAll(t.translation(),{x:2,y:1}, 'translation to (2,1) with css 2');
+			});
+			
+			asyncTest('jQuery.fn.animate', function(){
+				expect(0);
+				start();
+			});
+			
+			asyncTest('jQuery.expr.filters:animated', function(){
+				expect(0);
+				start();
+			});
+			
+			asyncTest('jQuery.fn.stop', function(){
+				expect(0);
+				start();
 			});
 			
 			
