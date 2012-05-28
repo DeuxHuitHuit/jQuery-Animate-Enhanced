@@ -209,13 +209,16 @@ Changelog:
 	// ----------
 	// Plugin variables
 	// ----------
-	var	cssTransitionProperties = 'top right bottom left opacity height width margin-left margin-right margin-top margin-bottom border-left border-right border-top border-bottom padding-left padding-right padding-top padding-bottom'.split(' '),
+	var	// make this public and extendable
+		cssTransitionProperties = 'top right bottom left opacity height width margin-left margin-right margin-top margin-bottom border-left border-right border-top border-bottom padding-left padding-right padding-top padding-bottom'.split(' '),
 		directions = 'top right bottom left'.split(' '),
 		noUnitProperties = 'opacity'.split(' '),
 		cssPrefixes = ['', '-webkit-', '-moz-', '-o-', '-ms-'],
 		pluginOptions = ['avoidTransforms', 'useTranslate3d', 'leaveTransforms', 'avoidCSSTransitions'],
+		
 		rfxnum = /^([+-]=)?([\d+-.]+)(.*)$/,
 		rupper = /([A-Z])/g,
+		// move to anonymus function call
 		originalAnimatedFilter = null,
 		defaultEnhanceData = {
 			secondary: {},
@@ -230,6 +233,7 @@ Changelog:
 		DATA_KEY = 'jQe',
 		CUBIC_BEZIER_OPEN = 'cubic-bezier(',
 		CUBIC_BEZIER_CLOSE = ')',
+		// make this public and extendable
 		easings = {
 			bounce: CUBIC_BEZIER_OPEN + '0.0, 0.35, .5, 1.3' + CUBIC_BEZIER_CLOSE,
 			linear: 'linear',

@@ -1,0 +1,45 @@
+DESIGN NOTES
+
+Animate function responsabilities and features
+
+1 - Separate properties that are handled (p) the plugin and those that are not (np);
+	+ This should return two objects, p and np
+	. _createPNP(css) { original:css p:{},np:{} };
+
+2 - $.each p
+	- Parse unit values for properties handled by the plugin (p)
+		+ For each input, the output will be an object 
+		+ Beware of properties without units...
+	. _parseValue(input,property) {value:0,unit'px'}
+
+3 - Calculate the actual duration with units
+	+ Checks the input for CSS3 values like '1s' and converts it to a int value in ms
+	. _parseDuration(duration) int
+
+4 - $.each p
+	- Verify for shorcuts (opacity and sizes)
+		+ Create a special objects that contains starts and end css values
+		+ Here we could add display:block shorcut --> use $.fn.show() ?
+	. _parseShortcuts() 
+
+5 - $.each p
+	- Extract properties from p that are combined in CSS3 --> See css method ?
+		+ i.e. {left:0,top:0} -> {transform:'translate(...)'}
+	. _extractToCss3(p) copy of p
+
+6 - $.each p
+	- Isolate and add properties in p that need vendor prefixes --> See css method ??
+		+ remove original ones
+		+ Add those properties to p
+	. _
+
+7 - $.each elem
+	- a) Save current values for every properties (just in case)
+	. _getCurrentValues(p) {}
+	- b) Set start values (for shortcuts, see #4)
+		+ hook callback
+	- c) if np != {}, animate with original method
+	
+8 - Animation end callback
+	- a) Check for special css to add at the end (i.e. display:none)
+	. _cssCallback() ...
