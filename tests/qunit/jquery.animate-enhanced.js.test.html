@@ -132,8 +132,14 @@
 			
 			test('_parseCssValue', function () {
 				// function _parseCssValue(input,prop)
-				var res = _private._parseCssValue('11px');
-				equal(res, 		null, 'no res for undefined property');
+				var res = _private._parseCssValue(undefined,'undefined');
+				equal(res, 				null, 'no res for undefined value');
+				
+				res = _private._parseCssValue('11px', undefined);
+				equal(res, 				null, 'no res for undefined property');
+				
+				res = _private._parseCssValue('11px','');
+				equal(res, 				null, 'no res for empty property');
 				
 				res = _private._parseCssValue('11px', 'width');
 				equal(res.value, 		11,   '11px value = 11');
@@ -153,7 +159,7 @@
 				res = _private._parseCssValue('0%','left');
 				equal(res.value, 		0, 	  '0% value = 0');
 				equal(res.modifier, 	'',   '0% modifier = nothing');
-				equal(res.unit, 		'px', '0% unit = px for width');
+				equal(res.unit, 		'%',  '0% unit = % for left');
 				
 				res = _private._parseCssValue('14pt','font-size')
 				equal(res.value, 		14,   '14pt value = 14');
@@ -162,44 +168,65 @@
 				
 				res = _private._parseCssValue('1.4em','line-height');
 				equal(res.value, 		1.4, '1.4em value = em');
-				equal(res.modifier, 	'', '1.4em modifier = nothing');
-				equal(res.value, 		14, '1.4em value = 14');
+				equal(res.modifier, 	'',  '1.4em modifier = nothing');
+				equal(res.unit, 		'em','1.4em unit = em');
 				
 				res = _private._parseCssValue('show','opacity');
 				equal(res.value, 		'1', 'show value = 1');
+				equal(res.modifier, 	'',  'show modifier = nothing');
+				equal(res.unit, 		'',	 'show unit = nothing');
 				
-				res = _private._parseCssValue('0$');
-				equal(res.value, 		'0$', '0$ value = 0$');
+				res = _private._parseCssValue('0$','undefined');
+				equal(res.value, 		'0$','0$ value = 0$');
+				equal(res.modifier, 	'',  '0$ modifier = nothing');
+				// @todo: make on decision on this
+				// I don't know if this is the `expected` result
+				equal(res.unit, 		'$',	 '0$ unit = nothing');
 				
-				res = _private._parseCssValue('0s');
-				equal(res.value, 		0, '0s value = 0');
+				res = _private._parseCssValue('0s','duration');
+				equal(res.value, 		0,   '0s value = 0');
+				equal(res.modifier, 	'',  '0s modifier = nothing');
+				equal(res.unit, 		's', '0s unit = s');
 				
-				res = _private._parseCssValue('1ms');
-				equal(res.value, 		1, '1ms value = 1');
+				res = _private._parseCssValue('1ms','time');
+				equal(res.value, 		1,   '1ms value = 1');
+				equal(res.modifier, 	'',  '1ms modifier = nothing');
+				equal(res.unit, 		'ms','1ms unit = ms');
 				
-				res = _private._parseCssValue('10min');
-				equal(10, 		10, '0$ value = 10');
+				res = _private._parseCssValue('10min','duration');
+				equal(10, 				10,   '10min value = 10');
+				equal(res.modifier, 	'',   '10min modifier = nothing');
+				equal(res.unit, 		'min','10min unit = min');
 				
-				res = _private._parseCssValue(true);
-				equal(true, 		true, 'true value = true');
+				res = _private._parseCssValue(true,'opacity');
+				equal(res.value, 		true, 'true value = true');
+				equal(res.modifier, 	'',   'true modifier = nothing');
+				equal(res.unit, 		'',	  'true unit = nothing');
 				
-				res = _private._parseCssValue(false);
-				equal(false, 		false, 'false value = false');
+				res = _private._parseCssValue(false, 'display');
+				equal(res.value, 		false,'false value = false');
+				equal(res.modifier, 	'',   'false modifier = nothing');
+				equal(res.unit, 		'',	  'false unit = nothing');
 				
-				res = _private._parseCssValue(undefined);
-				equal(undefined, 	undefined, 'undefined value = undefined');
+				res = _private._parseCssValue('+=13pt','font-size');
+				equal(res.value, 		13, 	'+=13pt value = 13');
+				equal(res.modifier, 	'+=',   '+=13pt modifier = +=');
+				equal(res.unit, 		'pt',	'+=13pt unit = pt');
 				
-				res = _private._parseCssValue(null);
-				equal(null, 		null, 'null value = null');
+				res = _private._parseCssValue('-=3px','height');
+				equal(res.value, 		3,	 	'-=3px value = 3');
+				equal(res.modifier, 	'-=',   '-=3px modifier = -=');
+				equal(res.unit, 		'px',	'-=3px unit = px');
 				
-				res = _private._parseCssValue('+=13pt');
-				equal(14, 	14, '+=13pt value = 13');
+				res = _private._parseCssValue('+=0.5','opacity');
+				equal(res.value, 		0.5,	'+=0.5 value = 3');
+				equal(res.modifier, 	'+=',   '+=0.5 modifier = +=');
+				equal(res.unit, 		'',		'+=0.5 unit = nothing for opacity');
 				
-				res = _private._parseCssValue('-=3px');
-				equal(3, 	3, '-=3px value = 3');
-				
-				res = _private._parseCssValue('+=0.5');
-				equal(0.5, 	0.5, '+=0.5 value = 0.5');
+				res = _private._parseCssValue('+=0.5','width');
+				equal(res.value, 		0.5,	'+=0.5 value = 3');
+				equal(res.modifier, 	'+=',   '+=0.5 modifier = +=');
+				equal(res.unit, 		'px',	'+=0.5 unit = px for width');
 			});
 			
 			test('_appropriateProperty', function () {
@@ -345,11 +372,47 @@
 			});*/
 			
 			test('_isBoxShortcut', function () {
-				expect(0);
+				// function _isBoxShortcut(prop)
+				var css = {};
+				ok(!_private._isBoxShortcut(css),'false on empty object');
+				ok(!_private._isBoxShortcut(null),'false on null');
+				ok(!_private._isBoxShortcut(undefined),'false on undefined');
+				css.opacity = 'show';
+				ok(!_private._isBoxShortcut(undefined),'false on with width = show');
+				css.width = 1;
+				ok(!_private._isOpacityShortcut(css),'false on opacity = 1');
+				css.width = 0;
+				ok(!_private._isOpacityShortcut(css),'false on width = 0');
+				css.width = 'show';
+				ok(_private._isOpacityShortcut(css),'true on width = show');
+				css.width = 'show';
+				ok(_private._isOpacityShortcut(css),'true on width = hide');
+				css.width = 'show';
+				ok(_private._isOpacityShortcut(css),'true on width = toggle');
+				css.width = 'k';
+				ok(!_private._isOpacityShortcut(css),'false on width = k');
 			});
 			
 			test('_isOpacityShortcut', function () {
-				expect(0);
+				// function _isOpacityShortcut(prop)
+				var css = {};
+				ok(!_private._isOpacityShortcut(css),'false on empty object');
+				ok(!_private._isOpacityShortcut(null),'false on null');
+				ok(!_private._isOpacityShortcut(undefined),'false on undefined');
+				css.width = 'show';
+				ok(!_private._isOpacityShortcut(undefined),'false on with width = show');
+				css.opacity = 1;
+				ok(!_private._isOpacityShortcut(css),'false on opacity = 1');
+				css.opacity = 0;
+				ok(!_private._isOpacityShortcut(css),'false on opacity = 0');
+				css.opacity = 'show';
+				ok(_private._isOpacityShortcut(css),'true on opacity = show');
+				css.opacity = 'show';
+				ok(_private._isOpacityShortcut(css),'true on opacity = hide');
+				css.opacity = 'show';
+				ok(_private._isOpacityShortcut(css),'true on opacity = toggle');
+				css.opacity = 'k';
+				ok(!_private._isOpacityShortcut(css),'false on opacity = k');
 			});
 			
 			test('_isEmptyObject', function () {

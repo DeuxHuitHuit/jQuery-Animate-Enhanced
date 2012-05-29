@@ -611,10 +611,21 @@ Changelog:
 	};
 	
 	function _parseCssValue(input,prop) {
-		if (input == undefined || prop == undefined) {
+		if (input == undefined || input === '' || prop == undefined || prop === '') {
 			return null;
 		}
-		var val = {};
+		var val = {
+			value: _getCssValue(input),
+			modifier: _getCssModifier(input),
+			unit: _getCssUnit(input, prop)
+		};
+		
+		// compute realValue
+		if (val.value == 'show') {
+			val.value = 1;
+		} else if (val.value == 'hide') {
+			val.value = 0;
+		}
 		
 		return val;
 	};
