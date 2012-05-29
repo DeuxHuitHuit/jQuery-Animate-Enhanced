@@ -36,7 +36,12 @@
 				if ( ($.isPlainObject(actual) || $.isArray(actual)) && 
 					 ($.isPlainObject(possible) || $.isArray(possible))) {
 					for (i in possible) {
-						if (actual[i] != possible[i]) {
+						/*if (!!deep && $.isPlainObject(possible)) {
+							yes = containsAll(actual[i] != possible[i],null,true);
+							if (!yes) {
+								break;
+							}
+						} else*/ if (actual[i] != possible[i]) {
 							yes = false;
 							break;
 						}
@@ -61,36 +66,140 @@
 				
 			module('jQuery.animate-enhanced._private');
 			
-			test('_getUnit', function () {
-				// function _getUnit(val, prop)
-				equal(_private._getUnit('11px'), 	'px', '11px unit\'s = px');
-				equal(_private._getUnit(0), 		'px', '0 unit\'s = px');
-				equal(_private._getUnit(0, 'opacity'),'', '0 unit\'s = nothing when opacity');
-				equal(_private._getUnit(0, 'width'),'px', '0 unit\'s = nothing when width');
-				equal(_private._getUnit(1), 		'px', '1 unit\'s = px');
-				equal(_private._getUnit(1, 'opacity'),'', '1 unit\'s = nothing when opacity');
-				equal(_private._getUnit(1,'opacity'),'', '1 unit\'s = nothing');
-				equal(_private._getUnit('0%','left'),'%', '0% unit\'s = %');
-				equal(_private._getUnit('14pt'), 	'pt', '14pt unit\'s = pt');
-				equal(_private._getUnit('1.4em'), 	'em', '1.4em unit\'s = em');
-				equal(_private._getUnit('show'), 	'px', 'show unit\'s = px');
-				equal(_private._getUnit('show', 'opacity'),'', 'show unit\'s = nothing when opacity');
-				equal(_private._getUnit('0$'), 		'$', '0$ unit\'s = $');
-				equal(_private._getUnit(true), 		'', 'true unit\'s = nothing');
-				equal(_private._getUnit(false), 	'', 'false unit\'s = nothing');
+			test('_getCssUnit', function () {
+				// function _getCssUnit(val, prop)
+				equal(_private._getCssUnit('11px'), 		'px', '11px unit\'s = px');
+				equal(_private._getCssUnit(0), 				'px', '0 unit\'s = px');
+				equal(_private._getCssUnit(0, 'opacity'),	'', '0 unit\'s = nothing when opacity');
+				equal(_private._getCssUnit(0, 'width'),		'px', '0 unit\'s = nothing when width');
+				equal(_private._getCssUnit(1), 				'px', '1 unit\'s = px');
+				equal(_private._getCssUnit(1, 'opacity'),	'', '1 unit\'s = nothing when opacity');
+				equal(_private._getCssUnit(1,'opacity'),	'', '1 unit\'s = nothing');
+				equal(_private._getCssUnit('0%','left'),	'%', '0% unit\'s = %');
+				equal(_private._getCssUnit('14pt'), 		'pt', '14pt unit\'s = pt');
+				equal(_private._getCssUnit('1.4em'), 		'em', '1.4em unit\'s = em');
+				equal(_private._getCssUnit('show'), 		'px', 'show unit\'s = px');
+				equal(_private._getCssUnit('show', 'opacity'),'', 'show unit\'s = nothing when opacity');
+				equal(_private._getCssUnit('0$'), 			'$', '0$ unit\'s = $');
+				equal(_private._getCssUnit('0s'), 			's', '0s value = s');
+				equal(_private._getCssUnit('1ms'), 			'ms', '1ms value = ms');
+				equal(_private._getCssUnit('10min'), 		'min', '0$ value = min');
+				equal(_private._getCssUnit(true), 			'', 'true unit\'s = nothing');
+				equal(_private._getCssUnit(false), 			'', 'false unit\'s = nothing');
+				equal(_private._getCssUnit(undefined), 		'', 'undefined unit\'s = nothing');
+				equal(_private._getCssUnit(null), 			'', 'null unit\'s = nothing');
+				equal(_private._getCssUnit('+=13pt'), 		'pt', '+=13pt unit\'s = pt');
+				equal(_private._getCssUnit('-=3px'), 		'px', '-=3px unit\'s = px');
+				equal(_private._getCssUnit('+=0.5'), 		'px', '+=0.5 unit\'s = px');
+				equal(_private._getCssUnit('+=0.5','opacity'),'', '+=0.5 unit\'s = nothing for opacity');
 			});
 			
-			test('_cleanValue', function () {
-				// function _cleanValue(val)
-				equal(_private._cleanValue('11px'), 	11, '11px value = 11');
-				equal(_private._cleanValue(0), 			0, '0 value = 0');
-				equal(_private._cleanValue(1), 			1, '1 value = 1');
-				equal(_private._cleanValue('0%'), 		0, '0% value = 0');
-				equal(_private._cleanValue('14pt'), 	14, '14pt value = 14');
-				equal(_private._cleanValue('1.4em'), 	1.4, '1.4em value = em');
-				equal(_private._cleanValue('show'), 	'show', 'show value = show');
-				equal(_private._cleanValue('0$'), 		'0$', '0$ value = 0$');
-				equal(_private._cleanValue(true), 		true, 'true value = true');
+			test('_getCssValue', function () {
+				// function _getCssValue(val)
+				equal(_private._getCssValue('11px'), 		11, '11px value = 11');
+				equal(_private._getCssValue(0), 			0, '0 value = 0');
+				equal(_private._getCssValue(1), 			1, '1 value = 1');
+				equal(_private._getCssValue('0%'), 			0, '0% value = 0');
+				equal(_private._getCssValue('14pt'), 		14, '14pt value = 14');
+				equal(_private._getCssValue('1.4em'), 		1.4, '1.4em value = em');
+				equal(_private._getCssValue('show'), 		'show', 'show value = show');
+				equal(_private._getCssValue('0$'), 			'0$', '0$ value = 0$');
+				equal(_private._getCssValue('0s'), 			0, '0s value = 0');
+				equal(_private._getCssValue('1ms'), 		1, '1ms value = 1');
+				equal(_private._getCssValue('10min'), 		10, '0$ value = 10');
+				equal(_private._getCssValue(true), 			true, 'true value = true');
+				equal(_private._getCssValue(false), 		false, 'false value = false');
+				equal(_private._getCssValue(undefined), 	undefined, 'undefined value = undefined');
+				equal(_private._getCssValue(null), 			null, 'null value = null');
+				equal(_private._getCssValue('+=13pt'), 		13, '+=13pt value = 13');
+				equal(_private._getCssValue('-=3px'), 		3, '-=3px value = 3');
+				equal(_private._getCssValue('+=0.5'), 		0.5, '+=0.5 value = 0.5');
+			});
+			
+			test('_getCssModifier', function () {
+				// function _getCssModifier(val)
+				equal(_private._getCssModifier('11px'), 	'', '11px modifier = nothing');
+				equal(_private._getCssModifier(0), 			'', '0 modifier = nothing');
+				equal(_private._getCssModifier('0%'), 		'', '0% modifier = nothing');
+				equal(_private._getCssModifier(true), 		'', 'true modifier = nothing');
+				equal(_private._getCssModifier(false), 		'', 'false modifier = nothing');
+				equal(_private._getCssModifier(undefined), 	'', 'undefined modifier = nothing');
+				equal(_private._getCssModifier(null), 		'', 'null modifier = nothing');
+				equal(_private._getCssModifier('+=13pt'), 	'+=', '+=13pt modifier = +=');
+				equal(_private._getCssModifier('-=3px'), 	'-=', '-=3px modifier = -=');
+				equal(_private._getCssModifier('+=0.5'), 	'+=', '+=0.5 modifier = +=');
+			});
+			
+			test('_parseCssValue', function () {
+				// function _parseCssValue(input,prop)
+				var res = _private._parseCssValue('11px');
+				equal(res, 		null, 'no res for undefined property');
+				
+				res = _private._parseCssValue('11px', 'width');
+				equal(res.value, 		11,   '11px value = 11');
+				equal(res.modifier, 	'',   '11px modifier = nothing');
+				equal(res.unit, 		'px', '11px unit = px');
+				
+				res = _private._parseCssValue(0, 'opacity');
+				equal(res.value, 		0,  '0 value = 0');
+				equal(res.modifier, 	'', '0 modifier = nothing');
+				equal(res.unit, 		'', '0 unit = nothing for opacity');
+				
+				res = _private._parseCssValue(1, 'width');
+				equal(res.value, 		1,    '1 value = 1');
+				equal(res.modifier, 	'',   '1 modifier = nothing');
+				equal(res.unit, 		'px', '1 unit = px for width');
+				
+				res = _private._parseCssValue('0%','left');
+				equal(res.value, 		0, 	  '0% value = 0');
+				equal(res.modifier, 	'',   '0% modifier = nothing');
+				equal(res.unit, 		'px', '0% unit = px for width');
+				
+				res = _private._parseCssValue('14pt','font-size')
+				equal(res.value, 		14,   '14pt value = 14');
+				equal(res.modifier, 	'',   '14pt modifier = nothing');
+				equal(res.unit, 		'pt', '14pt value = pt');
+				
+				res = _private._parseCssValue('1.4em','line-height');
+				equal(res.value, 		1.4, '1.4em value = em');
+				equal(res.modifier, 	'', '1.4em modifier = nothing');
+				equal(res.value, 		14, '1.4em value = 14');
+				
+				res = _private._parseCssValue('show','opacity');
+				equal(res.value, 		'1', 'show value = 1');
+				
+				res = _private._parseCssValue('0$');
+				equal(res.value, 		'0$', '0$ value = 0$');
+				
+				res = _private._parseCssValue('0s');
+				equal(res.value, 		0, '0s value = 0');
+				
+				res = _private._parseCssValue('1ms');
+				equal(res.value, 		1, '1ms value = 1');
+				
+				res = _private._parseCssValue('10min');
+				equal(10, 		10, '0$ value = 10');
+				
+				res = _private._parseCssValue(true);
+				equal(true, 		true, 'true value = true');
+				
+				res = _private._parseCssValue(false);
+				equal(false, 		false, 'false value = false');
+				
+				res = _private._parseCssValue(undefined);
+				equal(undefined, 	undefined, 'undefined value = undefined');
+				
+				res = _private._parseCssValue(null);
+				equal(null, 		null, 'null value = null');
+				
+				res = _private._parseCssValue('+=13pt');
+				equal(14, 	14, '+=13pt value = 13');
+				
+				res = _private._parseCssValue('-=3px');
+				equal(3, 	3, '-=3px value = 3');
+				
+				res = _private._parseCssValue('+=0.5');
+				equal(0.5, 	0.5, '+=0.5 value = 0.5');
 			});
 			
 			test('_appropriateProperty', function () {
@@ -129,8 +238,36 @@
 				ok(_private._isOptionProperty('avoidCSSTransitions'), 'avoidCSSTransitions');
 				ok(!_private._isOptionProperty('kkk'), 'kkk');
 			});
+			
+			test('_createPNP', function () {
+				// function _createPNP(css) 
+				var css = {'font-size':'10px'},
+					g = _private._createPNP(css);
+					
+				equal(g.np['font-size'], css['font-size'] ,'simple non supported prop (font-size)');
+				// add supported prop
+				css['opacity'] = 0;
+				g = _private._createPNP(css);
+				equal(g.np['font-size'], css['font-size'] ,'non supported prop (font-size) (bis)');
+				equal(g.p.opacity, css.opacity ,'simple supported prop (opacity)');
+				
+				// add bunch of props, with parameters
+				css.avoidCSSTransitions = false;
+				css.left = '100px';
+				css.right = '200px';
+				css['line-height'] = '1.5em';
+				g = _private._createPNP(css);
+				equal(g.np['font-size'], css['font-size'] ,'non supported prop (font-size) (bis, bis)');
+				equal(g.np['line-height'], css['line-height'], 'another non supported prop (line-height)');
+				equal(g.p.opacity, css.opacity ,'supported prop (opacity) (bis)');
+				equal(g.p.left, css.left, 'supported prop (left)');
+				equal(g.p.right, css.right, 'supported prop (right)');
+				
+				equal(g.original.right, css.right ,'original prop (right)');
+				equal(g.original.opacity, css.opacity ,'original prop (opacity)');
+			});
 		
-			test('_interpretValue', function () {
+			/*test('_interpretValue', function () {
 				// function _interpretValue(e, val, prop, isTransform) 
 				containsAll(_private._interpretValue($div, '11px', 'width', true), 		{value:11,unit:'px'}, 'width 11px');
 				
@@ -146,7 +283,7 @@
 				containsAll(_private._interpretValue($div, 'show', 'opacity', true), 	{value:1,unit:''}, 'opacity show -> 1');
 				//containsAll(_private._interpretValue($div, '0$', 'border-top', false), 	{value:0,unit:'$'},'border-top 0$');
 				//containsAll(_private._interpretValue($div, true, 'display', true), 		{value:true,unit:''}, 'display true');
-			});
+			});*/
 			
 			test('_getTranslation', function () {
 				// function _getTranslation(x, y, z, use3D, xUnit, yUnit, xUnit)
@@ -162,7 +299,7 @@
 				equal(_private._getTranslation(10,30,20,true,'em','px','%'), 'translate3d(10em,30px,20%)','(10em,30px,20%)');
 			});
 			
-			test('_applyCSSWithPrefix', function(){
+			/*test('_applyCSSWithPrefix', function(){
 				// function _applyCSSWithPrefix(e, cssProperties, property, duration, easing, value, unit, isTransform, isTranslatable, use3D)
 				var t = $div,
 					css = _private._applyCSSWithPrefix(t, null,'opacity', 1000, 'linear', 0, 'px', true, false, true);
@@ -204,8 +341,8 @@
 				equal(css.properties['transition-property'], 'opacity,transform','transition-property opacity,left');
 				equal(css.properties['transition-timing-function'], 'linear,ease-in','transition-timing linear,ease-in');
 				equal(css.properties['transition-duration'], '1000ms,2000ms','transition-duration 1000ms,2000ms');
-				*/
-			});
+				/
+			});*/
 			
 			test('_isBoxShortcut', function () {
 				expect(0);
@@ -349,7 +486,7 @@
 				start();
 			});
 			
-			/****** compatiblity tests ********/
+			/****** compatiblity tests ******* */
 			asyncTest('jQuery.fn.fadeIn', function(){
 				expect(0);
 				start();

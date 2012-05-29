@@ -297,19 +297,43 @@ Changelog:
 
 	/**
 		@private
-		@name _getUnit
+		@name _getCssUnit
 		@function
 		@description Return unit value ("px", "%", "em" for re-use correct one when translating)
 		@param {variant} [val] Target value
 	*/
-	function _getUnit(val, prop){
-		var unit = isNaN(val) ? (val+'').match(/\D+$/) : null;
+	function _getCssUnit(val, prop){
+		if (val === undefined || val === null || val === false || val === true) {
+			return ''; // no unit for all of this
+		}
 		
-		if (val === false || val === true || (!!prop && !!~jQuery.inArray(prop, noUnitProperties))) {
+		var unit = isNaN(val) ? (val+'').match(/\D+$/) : '';
+		
+		if (!!prop && !!~jQuery.inArray(prop, noUnitProperties)) {
 			return ''; // no values for things like opacity
 		}
 		
-		return (!unit || unit == 'show' || unit == 'hide')?'px':unit[0];
+		return (!unit || unit == 'show' || unit == 'hide' || unit == 'toggle')?'px':unit[0];
+	};
+	var _getUnit = _getCssUnit;
+	
+	function _createPNP(css) {
+		var g = {
+			original: css,
+			p: {},
+			np: {}
+		},
+		i = null;
+		for (i in css) {
+			if (_isSupportedProperty(i)) {
+				// add supported property to p
+				g.p[i] = css[i];
+			} else if (!_isOptionProperty(i)) {
+				// add not supported property to np
+				g.np[i] = css[i];
+			}
+		}
+		return g;
 	};
 
 
@@ -553,18 +577,46 @@ Changelog:
 
 	/**
 		@private
-		@name _cleanValue
+		@name _getCssValue
 		@function
 		@description Remove 'px' and other artifacts
 		@param {variant} [val]
 	*/
-	function _cleanValue(val) {
-		if (val === true || val === false) {
-			return val; // always return boolean values
+	function _getCssValue(val) {
+		if (val === undefined || val === null || val === true || val === false) {
+			return val; // always return boolean and null values
 		}
-		var v = isNaN(val) ? (val+'').replace(/px|em|%|pt/i, '') : val;
+		var v = isNaN(val) ? (val+'').replace(/-=|\+=|px$|em$|%$|pt$|s$|ms$|min$/gi, '') : val;
 		
 		return isNaN(v) ? v : parseFloat(v,10);
+	};
+	var _cleanValue = _getCssValue;
+	
+	
+	/**
+		@private
+		@name _getCssModifier
+		@function
+		@description Isolate +=/-= artifacts
+		@param {variant} [val]
+	*/
+	function _getCssModifier(val) {
+		if (!isNaN(val) || val === undefined || val === null || val === true || val === false) {
+			return ''; // always return boolean, null and numeric values
+		}
+		var mod = !!~val.indexOf('-=') ? '-=' : 
+				  !!~val.indexOf('+=') ? '+=' : ''; 
+			
+		return mod;
+	};
+	
+	function _parseCssValue(input,prop) {
+		if (input == undefined || prop == undefined) {
+			return null;
+		}
+		var val = {};
+		
+		return val;
 	};
 
 
@@ -575,11 +627,15 @@ Changelog:
 		@description Function to check if property should be handled by plugin
 		@param {string} [prop]
 		@param {variant} [value]
+		@deprecated
 	*/
 	function _appropriateProperty(prop, value, element) {
 		var is = jQuery.inArray(prop, cssTransitionProperties) > -1;
 		if ((prop == 'width' || prop == 'height') && (value === parseFloat(element.css(prop)))) is = false;
 		return is;
+	};
+	function _isSupportedProperty(prop) {
+		return !!~jQuery.inArray(prop, cssTransitionProperties);
 	};
 	
 	/**
@@ -843,22 +899,30 @@ Changelog:
     	leaveTransforms: undefined,
     	avoidCSSTransitions: undefined,
     	_private: {
-			_getUnit:_getUnit,
-			_interpretValue: _interpretValue,
+			_getCssUnit:_getCssUnit,
+			_getCssValue: _getCssValue,
+			_getCssModifier: _getCssModifier,
+			_parseCssValue: _parseCssValue,
+			
+			//_interpretValue: _interpretValue,
+			
 			_getTranslation: _getTranslation,
 			_applyCSSTransition: _applyCSSTransition,
 			_applyCSSWithPrefix: _applyCSSWithPrefix,
+			
 			_isBoxShortcut: _isBoxShortcut,
 			_isOpacityShortcut: _isOpacityShortcut,
 			_isEmptyObject: _isEmptyObject,
-			_cleanValue: _cleanValue,
 			_appropriateProperty: _appropriateProperty,
 			_appropriateEasing: _appropriateEasing,
 			
 			_isOptionProperty: _isOptionProperty,
 			_assureDefault: _assureDefault,
 			_isDirection: _isDirection,
-			_hasDirection: _hasDirection
+			_hasDirection: _hasDirection,
+			
+			// new methods
+			_createPNP: _createPNP
 		}
     };
 
