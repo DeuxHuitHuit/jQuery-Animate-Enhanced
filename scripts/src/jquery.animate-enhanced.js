@@ -218,8 +218,6 @@ Changelog:
 		
 		rfxnum = /^([+-]=)?([\d+-.]+)(.*)$/,
 		rupper = /([A-Z])/g,
-		// move to anonymus function call
-		originalAnimatedFilter = null,
 		defaultEnhanceData = {
 			secondary: {},
 			meta: {
@@ -288,7 +286,7 @@ Changelog:
 	// Extended :animated filter
 	// ----------
 	if ( jQuery.expr && jQuery.expr.filters ) {
-		originalAnimatedFilter = jQuery.expr.filters.animated;
+		var originalAnimatedFilter = jQuery.expr.filters.animated;
 		jQuery.expr.filters.animated = function(elem) {
 			return jQuery(elem).data('events') && jQuery(elem).data('events')[transitionEndEvent] ? true : originalAnimatedFilter.call(this, elem);
 		};
