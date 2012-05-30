@@ -1,4 +1,4 @@
-jquery.animate-enhanced plugin
+jquery.animate-enhanced plugin ![Build Status on travis-ci](http://travis-ci.org/DeuxHuitHuit/jQuery-Animate-Enhanced.png)
 ===============
 
 Extend $.animate() to detect CSS transitions for Webkit, Mozilla and Opera and convert animations automatically. Compatible with IE6+
