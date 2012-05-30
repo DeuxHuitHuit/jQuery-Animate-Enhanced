@@ -307,7 +307,7 @@ Changelog:
 			return ''; // no unit for all of this
 		}
 		
-		var unit = isNaN(val) ? (val+'').match(/\D+$/) : '';
+		var unit = jQuery.isNaN(val) ? (val+'').match(/\D+$/) : '';
 		
 		if (!!prop && !!~jQuery.inArray(prop, noUnitProperties)) {
 			return ''; // no values for things like opacity
@@ -317,6 +317,11 @@ Changelog:
 	};
 	var _getUnit = _getCssUnit;
 	
+	/**
+	 * @private
+	 * @param css - The css properties to be animated
+	 * @returns object
+	 */
 	function _createPNP(css) {
 		var g = {
 			original: css,
@@ -351,7 +356,7 @@ Changelog:
 		// this is a nasty fix, but we check for prop == 'd' to see if we're dealing with SVG, and abort
 		if (prop == "d") return false;
 		
-		var parts = isNaN(val) ? rfxnum.exec(val) : false,
+		var parts = jQuery.isNaN(val) ? rfxnum.exec(val) : false,
 			start = e.css(prop) === 'auto' ? 0 : parseFloat(e.css(prop),10),
 			cleanCSSStart = typeof start == 'string' ? _cleanValue(start) : start,
 			cleanTarget = typeof val == 'string' ? _cleanValue(val) : val,
@@ -586,9 +591,9 @@ Changelog:
 		if (val === undefined || val === null || val === true || val === false) {
 			return val; // always return boolean and null values
 		}
-		var v = isNaN(val) ? (val+'').replace(/-=|\+=|px$|em$|%$|pt$|s$|ms$|min$/gi, '') : val;
+		var v = jQuery.isNaN(val) ? (val+'').replace(/-=|\+=|px$|em$|%$|pt$|s$|ms$|min$/gi, '') : val;
 		
-		return isNaN(v) ? v : parseFloat(v,10);
+		return jQuery.isNaN(v) ? v : parseFloat(v,10);
 	};
 	var _cleanValue = _getCssValue;
 	
@@ -601,7 +606,7 @@ Changelog:
 		@param {variant} [val]
 	*/
 	function _getCssModifier(val) {
-		if (!isNaN(val) || val === undefined || val === null || val === true || val === false) {
+		if (!jQuery.isNaN(val) || val === undefined || val === null || val === true || val === false) {
 			return ''; // always return boolean, null and numeric values
 		}
 		var mod = !!~val.indexOf('-=') ? '-=' : 
@@ -620,14 +625,30 @@ Changelog:
 			unit: _getCssUnit(input, prop)
 		};
 		
-		// compute realValue
-		if (val.value == 'show') {
-			val.value = 1;
-		} else if (val.value == 'hide') {
-			val.value = 0;
-		}
-		
 		return val;
+	};
+	
+	/**
+	 * Parse the input duration and returns it's int value in ms
+	 * @private
+	 * @param duration
+	 * @returns int
+	 */
+	function _parseDuration(duration) {
+		if (jQuery.isNaN(duration) && jQuery.type(duration) != 'string') {
+			return 0;
+		}
+		var value = _getCssValue(duration),
+			unit = _getCssUnit(duration);
+		
+		if (unit == 'min') {
+			value *= (60 * 1000);
+		} else if (unit == 's') {
+			value *= 1000;
+		} else if (value < 0) {
+			value = 0;
+		}
+		return parseInt(value, 10);
 	};
 
 
@@ -914,6 +935,7 @@ Changelog:
 			_getCssValue: _getCssValue,
 			_getCssModifier: _getCssModifier,
 			_parseCssValue: _parseCssValue,
+			_parseDuration: _parseDuration,
 			
 			//_interpretValue: _interpretValue,
 			

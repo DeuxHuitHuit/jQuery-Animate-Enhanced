@@ -172,15 +172,16 @@
 				equal(res.unit, 		'em','1.4em unit = em');
 				
 				res = _private._parseCssValue('show','opacity');
-				equal(res.value, 		'1', 'show value = 1');
+				// @todo: Revise here if we really still want show a this point
+				equal(res.value, 		'show', 'show value = 1');
 				equal(res.modifier, 	'',  'show modifier = nothing');
 				equal(res.unit, 		'',	 'show unit = nothing');
 				
 				res = _private._parseCssValue('0$','undefined');
-				equal(res.value, 		'0$','0$ value = 0$');
-				equal(res.modifier, 	'',  '0$ modifier = nothing');
 				// @todo: make on decision on this
 				// I don't know if this is the `expected` result
+				equal(res.value, 		'0$','0$ value = 0$');
+				equal(res.modifier, 	'',  '0$ modifier = nothing');
 				equal(res.unit, 		'$',	 '0$ unit = nothing');
 				
 				res = _private._parseCssValue('0s','duration');
@@ -378,19 +379,28 @@
 				ok(!_private._isBoxShortcut(null),'false on null');
 				ok(!_private._isBoxShortcut(undefined),'false on undefined');
 				css.opacity = 'show';
-				ok(!_private._isBoxShortcut(undefined),'false on with width = show');
+				ok(!_private._isBoxShortcut(undefined),'false on with opacity = show');
 				css.width = 1;
-				ok(!_private._isOpacityShortcut(css),'false on opacity = 1');
-				css.width = 0;
-				ok(!_private._isOpacityShortcut(css),'false on width = 0');
+				ok(!_private._isBoxShortcut(css),'false on width = 1');
+				css.width = '0px';
+				ok(!_private._isBoxShortcut(css),'false on width = 0px');
 				css.width = 'show';
-				ok(_private._isOpacityShortcut(css),'true on width = show');
-				css.width = 'show';
-				ok(_private._isOpacityShortcut(css),'true on width = hide');
-				css.width = 'show';
-				ok(_private._isOpacityShortcut(css),'true on width = toggle');
+				ok(_private._isBoxShortcut(css),'true on width = show');
+				css.width = 'hide';
+				ok(_private._isBoxShortcut(css),'true on width = hide');
+				css.width = 'toggle';
+				ok(_private._isBoxShortcut(css),'true on width = toggle');
 				css.width = 'k';
-				ok(!_private._isOpacityShortcut(css),'false on width = k');
+				ok(!_private._isBoxShortcut(css),'false on width = k');
+				css.width = '0px';
+				css.height = '10px';
+				ok(!_private._isBoxShortcut(css),'false on height = 10px');
+				css.height = 'show';
+				ok(_private._isBoxShortcut(css),'true on height = show');
+				css.height = 'hide';
+				ok(_private._isBoxShortcut(css),'true on height = hide');
+				css.height = 'toggle';
+				ok(_private._isBoxShortcut(css),'true on height = toggle');
 			});
 			
 			test('_isOpacityShortcut', function () {
@@ -407,12 +417,24 @@
 				ok(!_private._isOpacityShortcut(css),'false on opacity = 0');
 				css.opacity = 'show';
 				ok(_private._isOpacityShortcut(css),'true on opacity = show');
-				css.opacity = 'show';
+				css.opacity = 'hide';
 				ok(_private._isOpacityShortcut(css),'true on opacity = hide');
-				css.opacity = 'show';
+				css.opacity = 'toggle';
 				ok(_private._isOpacityShortcut(css),'true on opacity = toggle');
 				css.opacity = 'k';
 				ok(!_private._isOpacityShortcut(css),'false on opacity = k');
+			});
+			
+			test('_parseDuration', function () {
+				equal(_private._parseDuration(null),		0, 'null duration = 0');
+				equal(_private._parseDuration(undefined), 	0, 'undefined duration = 0');
+				equal(_private._parseDuration(0), 			0, '0 duration = 0');
+				equal(_private._parseDuration(10), 			10, '10 duration = 10');
+				equal(_private._parseDuration(100), 		100, '100 duration = 100');
+				equal(_private._parseDuration('1s'), 		1000, '1s duration = 1000');
+				equal(_private._parseDuration('1min'), 		60000, '1min duration = 60000');
+				equal(_private._parseDuration('200ms'), 	200, '200ms duration = 200');
+				equal(_private._parseDuration('200'), 		200, '200 duration = 200');
 			});
 			
 			test('_isEmptyObject', function () {
