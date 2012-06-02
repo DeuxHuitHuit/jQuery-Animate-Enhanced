@@ -12,3 +12,8 @@ before_script:
   - sleep 3
 script: 
   - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html'
+  - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html?jquery=1.7'
+  - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html?jquery=1.6'
+  - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html?jquery=1.5'
+  - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html?jquery=1.4'
+        

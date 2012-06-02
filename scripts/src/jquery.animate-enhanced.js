@@ -291,6 +291,20 @@ Changelog:
 			return jQuery(elem).data('events') && jQuery(elem).data('events')[transitionEndEvent] ? true : originalAnimatedFilter.call(this, elem);
 		};
 	}
+	
+	// patching older version of jquery
+	function _isNumeric(val) {
+		var isNum = false;
+		if (jQuery.isFunction(jQuery.isNumeric)) {
+			isNum = jQuery.isNumeric(val);
+		} else if (jQuery.isFunction(jQuery.isNaN)) {
+			isNum = !jQuery.isNaN(val);
+		} else {
+			isNum = val !== true && val !== false && val != null && !window.isNaN(val);
+		}
+		
+		return isNum;
+	};
 
 
 	/**
@@ -305,7 +319,7 @@ Changelog:
 			return ''; // no unit for all of this
 		}
 		
-		var unit = jQuery.isNaN(val) ? (val+'').match(/\D+$/) : '';
+		var unit = _isNumeric(val) ? '' : (val+'').match(/\D+$/);//
 		
 		if (!!prop && !!~jQuery.inArray(prop, noUnitProperties)) {
 			return ''; // no values for things like opacity
@@ -354,7 +368,7 @@ Changelog:
 		// this is a nasty fix, but we check for prop == 'd' to see if we're dealing with SVG, and abort
 		if (prop == "d") return false;
 		
-		var parts = jQuery.isNaN(val) ? rfxnum.exec(val) : false,
+		var parts = _isNumeric(val) ? false : rfxnum.exec(val), //
 			start = e.css(prop) === 'auto' ? 0 : parseFloat(e.css(prop),10),
 			cleanCSSStart = typeof start == 'string' ? _cleanValue(start) : start,
 			cleanTarget = typeof val == 'string' ? _cleanValue(val) : val,
@@ -589,9 +603,9 @@ Changelog:
 		if (val === undefined || val === null || val === true || val === false) {
 			return val; // always return boolean and null values
 		}
-		var v = jQuery.isNaN(val) ? (val+'').replace(/-=|\+=|px$|em$|%$|pt$|s$|ms$|min$/gi, '') : val;
+		var v = _isNumeric(val) ? val : (val+'').replace(/-=|\+=|px$|em$|%$|pt$|s$|ms$|min$/gi, ''); //
 		
-		return jQuery.isNaN(v) ? v : parseFloat(v,10);
+		return _isNumeric(v) ? parseFloat(v,10) : val; //
 	};
 	var _cleanValue = _getCssValue;
 	
@@ -604,7 +618,7 @@ Changelog:
 		@param {variant} [val]
 	*/
 	function _getCssModifier(val) {
-		if (!jQuery.isNaN(val) || val === undefined || val === null || val === true || val === false) {
+		if (_isNumeric(val)/*//*/ || val === undefined || val === null || val === true || val === false) {
 			return ''; // always return boolean, null and numeric values
 		}
 		var mod = !!~val.indexOf('-=') ? '-=' : 
@@ -633,7 +647,7 @@ Changelog:
 	 * @returns int
 	 */
 	function _parseDuration(duration) {
-		if (jQuery.isNaN(duration) && jQuery.type(duration) != 'string') {
+		if (!_isNumeric(duration)/*//*/ && jQuery.type(duration) != 'string') {
 			return 0;
 		}
 		var value = _getCssValue(duration),

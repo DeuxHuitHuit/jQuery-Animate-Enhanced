@@ -5,6 +5,29 @@
 	<title>jQuery Animate Enhanced test suite</title> 
 	
 	<link rel="stylesheet" href="./qunit.css" type="text/css"/>
+	<script>
+		(function (doc,co) {
+			// http://stackoverflow.com/questions/901115/get-query-string-values-in-javascript
+			var u = {},
+				e,
+		        a = /\+/g,  // Regex for replacing addition symbol with a space
+		        r = /([^&=]+)=?([^&]*)/g,
+		        d = function (s) { return decodeURIComponent(s.replace(a, " ")); },
+		        q = window.location.search.substring(1),
+				v = '1.7.2';
+
+			while (e = r.exec(q)) {
+				u[d(e[1])] = d(e[2]);
+			}
+			
+			if (!!u.jquery) {
+				v = u.jquery;
+			}	
+
+			doc.write('<script src="http://ajax.googleapis.com/ajax/libs/jquery/'+v+'/jquery.min.js">' + "<" + '/' + 'script>');
+			co.log('Loading jQuery v' + v);
+		})(window.document, console);
+	</script>
 </head>
 <body>
 	<h1 id="qunit-header">jQuery Animate Enhanced - Passes only in Webkit...</h1>  
@@ -17,7 +40,6 @@
 	<div id="delay"></div>
 	<div id="translation"></div>
 	
-	<script src="../../scripts/contrib/jquery-1.4.3.js"></script> 
 	<script src="../../scripts/src/jquery.animate-enhanced.js"></script> 
 	<script src="./qunit.js"></script>
 	<script>
