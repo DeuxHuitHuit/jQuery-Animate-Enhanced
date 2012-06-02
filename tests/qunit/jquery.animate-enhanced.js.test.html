@@ -539,19 +539,19 @@
 				
 				stop(); // stop test execution
 				
-				setTimeout(function () {
+				setTimeout(function firstDelayTimer () {
 					contains(t.css('-webkit-transition-delay'), ['','0s','0ms'], 'delay has been resetted');
 					
 					t.delay(100, false).animate({'line-height':'10px'}, 30);
 					// verify that anim has not been started here
-					contains(t.css('line-height'), ['auto','0px'], 'anim has not started');
+					contains(t.css('line-height'), ['auto','0px','normal'], 'anim has not started');
 					
-					setTimeout(function () {
+					setTimeout(function secondDelayTimer () {
 						// verify that anim is done
 						equal(t.css('line-height'), '10px', 'anim has gone ok');
 						
 						start(); // restart test execution
-					},150);	
+					},130);	
 				}, 501);
 				
 			}); // end delay test
