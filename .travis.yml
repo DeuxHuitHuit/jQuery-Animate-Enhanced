@@ -11,4 +11,4 @@ before_script:
   - node ./tests/qunit/server.js /../../ 8080 &
   - sleep 3
 script: 
-  - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html
+  - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html'
