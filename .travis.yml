@@ -4,13 +4,13 @@ node_js:
 notifications:
   email: false
 before_script:
+  - node --version
+  - sudo npm install -g grunt
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
-  - node --version
-  - npm install connect
-  - node ./tests/qunit/server.js /../../ 8080 &
   - sleep 3
-script: 
+script:
+  - grunt
   - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html'
   - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html?jquery=1.7'
   - /usr/local/bin/phantomjs ./tests/qunit/phantomjs.js 'http://localhost:8080/tests/qunit/jquery.animate-enhanced.js.test.html?jquery=1.6'
