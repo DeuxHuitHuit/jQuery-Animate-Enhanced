@@ -43,7 +43,7 @@
 	<script src="../../scripts/src/jquery.animate-enhanced.js"></script> 
 	<script src="./qunit.js"></script>
 	<script>
-	(function ($) {
+	(function TestSuite($) {
 			
 		var _private = jQuery.fn.animate.defaults._private,
 			$div = $('#div'),
@@ -77,7 +77,7 @@
 				
 			module('jQuery.animate-enhanced.defaults');
 			
-			test('jQuery.fn.animate.defaults', function () {
+			test('jQuery.fn.animate.defaults', function animateDefaultsTest() {
 				// assure defaults are what they should be
 				equal($.fn.animate.defaults.avoidTransforms, undefined, 'avoidTransforms = undefined');
 				equal($.fn.animate.defaults.useTranslate3d, true, 'useTranslate3d = true');
@@ -88,7 +88,7 @@
 				
 			module('jQuery.animate-enhanced._private');
 			
-			test('_getCssUnit', function () {
+			test('_getCssUnit', function _getCssUnitTest() {
 				// function _getCssUnit(val, prop)
 				equal(_private._getCssUnit('11px'), 		'px', '11px unit\'s = px');
 				equal(_private._getCssUnit(0), 				'px', '0 unit\'s = px');
@@ -116,7 +116,7 @@
 				equal(_private._getCssUnit('+=0.5','opacity'),'', '+=0.5 unit\'s = nothing for opacity');
 			});
 			
-			test('_getCssValue', function () {
+			test('_getCssValue', function _getCssValueTest() {
 				// function _getCssValue(val)
 				equal(_private._getCssValue('11px'), 		11, '11px value = 11');
 				equal(_private._getCssValue(0), 			0, '0 value = 0');
@@ -138,7 +138,7 @@
 				equal(_private._getCssValue('+=0.5'), 		0.5, '+=0.5 value = 0.5');
 			});
 			
-			test('_getCssModifier', function () {
+			test('_getCssModifier', function _getCssModifierTest() {
 				// function _getCssModifier(val)
 				equal(_private._getCssModifier('11px'), 	'', '11px modifier = nothing');
 				equal(_private._getCssModifier(0), 			'', '0 modifier = nothing');
@@ -152,7 +152,7 @@
 				equal(_private._getCssModifier('+=0.5'), 	'+=', '+=0.5 modifier = +=');
 			});
 			
-			test('_parseCssValue', function () {
+			test('_parseCssValue', function _parseCssValueTest() {
 				// function _parseCssValue(input,prop)
 				var res = _private._parseCssValue(undefined,'undefined');
 				equal(res, 				null, 'no res for undefined value');
@@ -252,7 +252,7 @@
 				equal(res.unit, 		'px',	'+=0.5 unit = px for width');
 			});
 			
-			test('_appropriateProperty', function () {
+			test('_appropriateProperty', function _appropriatePropertyTest() {
 				// function _appropriateProperty(prop, value, element)
 				ok(_private._appropriateProperty('width', '10px', $div), 'width 10px');
 				ok(_private._appropriateProperty('height', '10px', $div), 'height 10px');
@@ -262,7 +262,7 @@
 				ok(_private._appropriateProperty('left', 0, $div), 'left 0');
 			});
 			
-			test('_appropriateEasing', function () {
+			test('_appropriateEasing', function _appropriateEasingTest() {
 				// function _appropriateEasing(easing, element)
 				ok(_private._appropriateEasing('swing', $div), 'swing');
 				ok(_private._appropriateEasing('linear', $div), 'linear');
@@ -280,7 +280,7 @@
 				equal(_private._assureDefault({avoidCSSTransitions:true},'avoidCSSTransitions', 'true for explicit property'), true);
 			});
 			
-			test('_isOptionProperty', function () {
+			test('_isOptionProperty', function _isOptionPropertyTest() {
 				// function _isOptionProperty(p)
 				ok(_private._isOptionProperty('avoidTransforms'), 'avoidTransforms');
 				ok(_private._isOptionProperty('useTranslate3d'), 'useTranslate3d');
@@ -289,7 +289,7 @@
 				ok(!_private._isOptionProperty('kkk'), 'kkk');
 			});
 			
-			test('_createPNP', function () {
+			test('_createPNP', function _createPNPTest() {
 				// function _createPNP(css) 
 				var css = {'font-size':'10px'},
 					g = _private._createPNP(css);
@@ -335,7 +335,7 @@
 				//containsAll(_private._interpretValue($div, true, 'display', true), 		{value:true,unit:''}, 'display true');
 			});*/
 			
-			test('_getTranslation', function () {
+			test('_getTranslation', function _getTranslationTest() {
 				// function _getTranslation(x, y, z, use3D, xUnit, yUnit, xUnit)
 				equal(_private._getTranslation(0,0,0), 'translate3d(0px,0px,0px)', '3d by default');
 				jQuery.fn.animate.defaults.useTranslate3d = false;
@@ -394,7 +394,7 @@
 				/
 			});*/
 			
-			test('_isBoxShortcut', function () {
+			test('_isBoxShortcut', function _isBoxShortcutTest() {
 				// function _isBoxShortcut(prop)
 				var css = {};
 				ok(!_private._isBoxShortcut(css),'false on empty object');
@@ -425,7 +425,7 @@
 				ok(_private._isBoxShortcut(css),'true on height = toggle');
 			});
 			
-			test('_isOpacityShortcut', function () {
+			test('_isOpacityShortcut', function _isOpacityShortcutTest() {
 				// function _isOpacityShortcut(prop)
 				var css = {};
 				ok(!_private._isOpacityShortcut(css),'false on empty object');
@@ -447,7 +447,7 @@
 				ok(!_private._isOpacityShortcut(css),'false on opacity = k');
 			});
 			
-			test('_parseDuration', function () {
+			test('_parseDuration', function _parseDurationTest () {
 				equal(_private._parseDuration(null),		0, 'null duration = 0');
 				equal(_private._parseDuration(undefined), 	0, 'undefined duration = 0');
 				equal(_private._parseDuration(0), 			0, '0 duration = 0');
@@ -459,21 +459,33 @@
 				equal(_private._parseDuration('200'), 		200, '200 duration = 200');
 			});
 			
-			test('_isEmptyObject', function () {
+			test('_isEmptyObject', function _isEmptyObjectTest () {
+				ok(_private._isEmptyObject(null),			'null'); // null is "empty" since it's an object
+				ok(!_private._isEmptyObject(undefined),		'undefined'); // not even empty
+				ok(_private._isEmptyObject({}),				'{}');
+				ok(_private._isEmptyObject(new Object()),	'new Object()');
+				ok(_private._isEmptyObject([]),				'[]');
+				ok(_private._isEmptyObject(new Array()),	'new Array()');
+				
+				ok(!_private._isEmptyObject({k:0}),			'{k:0}');
+				ok(!_private._isEmptyObject([0]),			'[0]');
+				ok(!_private._isEmptyObject(''),			'""');
+				ok(!_private._isEmptyObject(0),				'0');
+				ok(!_private._isEmptyObject(true),			'true');
+				ok(!_private._isEmptyObject($.noop),		'noop');
+			});
+			
+			test('_isDirection', function _isDirectionTest() {
 				expect(0);
 			});
 			
-			test('_isDirection', function () {
-				expect(0);
-			});
-			
-			test('_hasDirection', function () {
+			test('_hasDirection', function _hasDirectionTest() {
 				expect(0);
 			});
 			
 			module('jQuery.animate-enhanced.core');
 			
-			test('jQuery.fn.css', function(){
+			test('jQuery.fn.css', function cssTest(){
 				var t = $css;
 				//expect(13);
 				
@@ -525,7 +537,7 @@
 				equal(t.css('left'),'2px', 'get left = 2px');
 			}); // end css test
 			
-			test('jQuery.fn.delay', function () {
+			test('jQuery.fn.delay', function delayTest() {
 				var t = $delay;
 				
 				// getter default
@@ -556,7 +568,7 @@
 				
 			}); // end delay test
 			
-			test('jQuery.fn.translation', function(){
+			test('jQuery.fn.translation', function translationTest(){
 				// note: the goal here is to test the translation() method only
 				// not any of the features of the css() method
 				var t = $trans;
@@ -578,57 +590,56 @@
 				containsAll(t.translation(),{x:0,y:0}, 'reset to default translation to (0,0)');
 			});
 			
-			asyncTest('jQuery.fn.animate', function(){
+			asyncTest('jQuery.fn.animate', function animateTest(){
 				expect(0);
 				start();
 			});
 			
-			asyncTest('jQuery.expr.filters:animated', function(){
+			asyncTest('jQuery.expr.filters:animated', function filtersTest(){
 				expect(0);
 				start();
 			});
 			
-			asyncTest('jQuery.fn.stop', function(){
+			asyncTest('jQuery.fn.stop', function stopTest(){
 				expect(0);
 				start();
 			});
 			
 			/****** compatiblity tests ******* */
-			asyncTest('jQuery.fn.fadeIn', function(){
+			asyncTest('jQuery.fn.fadeIn', function fadeInTest(){
 				expect(0);
 				start();
 			});
 			
-			asyncTest('jQuery.fn.fadeOut', function(){
+			asyncTest('jQuery.fn.fadeOut', function fadeOutTest(){
 				expect(0);
 				start();
 			});
 			
-			asyncTest('jQuery.fn.fadeTo', function(){
+			asyncTest('jQuery.fn.fadeTo', function fadeToTest(){
 				expect(0);
 				start();
 			});
 			
-			asyncTest('jQuery.fn.slideUp', function(){
+			asyncTest('jQuery.fn.slideUp', function slideUpTest(){
 				expect(0);
 				start();
 			});
 			
-			asyncTest('jQuery.fn.slideDown', function(){
+			asyncTest('jQuery.fn.slideDown', function slideDownTest(){
 				expect(0);
 				start();
 			});
 			
-			asyncTest('jQuery.fn.show', function(){
+			asyncTest('jQuery.fn.show', function showTest(){
 				expect(0);
 				start();
 			});
 			
-			asyncTest('jQuery.fn.hide', function(){
+			asyncTest('jQuery.fn.hide', function hideTest(){
 				expect(0);
 				start();
 			});
-			
 			
 		}; // end run test
 		

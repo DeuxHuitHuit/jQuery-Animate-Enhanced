@@ -585,6 +585,9 @@ Changelog:
 		@param {object} [obj]
 	*/
 	function _isEmptyObject(obj) {
+		if (typeof obj !== 'object') {
+			return false;
+		}
 		for (var i in obj) {
 			return false;
 		}
